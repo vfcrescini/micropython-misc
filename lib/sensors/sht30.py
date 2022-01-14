@@ -215,14 +215,21 @@ class SHT30:
 
     # were we asked to go in continuous mode?
 
-    if continuous != None and continuous > 0 and continuous in SHT30_TSTANDBY_MAP.values():
+    if continuous != None:
 
-      mode = 0x02
-      standby = {y: x for x, y in SHT30_TSTANDBY_MAP.items()}[continuous]
+      if continuous == 0:
 
-      # absolute time until expiry
+        mode = 0x00
+        standby = 0x00
 
-      self._time_ready = self._xt.time_us() + SHT30_TMEASURE_MAP[repeatability] + SHT30_TSTANDBY_MAP[standby]
+      elif continuous > 0 and continuous in SHT30_TSTANDBY_MAP.values():
+
+        mode = 0x02
+        standby = {y: x for x, y in SHT30_TSTANDBY_MAP.items()}[continuous]
+
+        # absolute time until expiry
+
+        self._time_ready = self._xt.time_us() + SHT30_TMEASURE_MAP[repeatability] + SHT30_TSTANDBY_MAP[standby]
 
     # always send stop command first
 

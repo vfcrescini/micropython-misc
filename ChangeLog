@@ -1,5 +1,9 @@
 2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* lib/sensors/sht30.py:
+
+	  - Now possible to set to single-shot mode from continuous.
+
 	* lib/sensors/bme280.py:
 
 	  - Re-read chip data after a soft reset.
