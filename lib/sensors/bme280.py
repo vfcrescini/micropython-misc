@@ -99,8 +99,6 @@ class BME280:
 
     self.reset()
 
-    self._get_data_rom()
-
 
   def _get_data_rom(self):
 
@@ -394,6 +392,7 @@ class BME280:
     while not self._get_status()[0]:
       self._xt.sleep_ms(1)
 
+    self._get_data_rom()
     self._set_config()
     self._set_mode()
 

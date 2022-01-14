@@ -1,3 +1,10 @@
+2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/sensors/bme280.py:
+
+	  - Re-read chip data after a soft reset.
+
+
 2022-01-14  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* VERSION:
