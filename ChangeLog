@@ -1,5 +1,11 @@
 2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* lib/sensors/am2320.py:
+	* tests/am2320_test.py:
+
+	  - Added driver and test code for AM2320 humidity and temperature
+	    sensor.
+
 	* lib/sensors/sht30.py:
 
 	  - Now possible to set to single-shot mode from continuous.
