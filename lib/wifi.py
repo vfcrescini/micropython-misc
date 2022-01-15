@@ -7,49 +7,45 @@
 
 # wifi helper
 
-import os
 import network
 import time
 
+import xconfig
+
 
 # read in wifi credentials
+#   path: path to a file containing:
+#     essid = <the ESSID of the wifi network to connect to>
+#     passwd = <the wifi password>
 
-def get_cred(path="wifi.txt", verbose=False):
+def _get_cred(path, verbose):
 
-  f = None
-  l = None
+  xc = xconfig.XConfig()
 
-  if path not in os.listdir():
+  if not xc.load(path):
+
     if verbose:
-      print("[wifi] unable to find %s" % (path))
+      print("[wifi] unable load %s" % (path))
+
     return (None, None)
 
-  try:
-    f = open(path, "r")
-  except:
-    if verbose:
-      print("[wifi] unable to open %s" % (path))
-    return (None, None)
-
-  try:
-    l = f.readlines()
-  except:
-    if verbose:
-      print("[wifi] unable to read %s" % (path))
-    return (None, None)
-
-  f.close()
-
-  return tuple(map(lambda x: x.strip(), l))
+  return xc.get_str("essid", default=None), xc.get_str("passwd", default=None)
 
 
 # connect to WIFI
 
-def connect(path="wifi.txt", verbose=False):
+def connect(path="wifi.conf", verbose=False):
 
   found = False
   net = network.WLAN(network.STA_IF)
-  essid, passwd = get_cred(path, verbose)
+  essid, passwd = _get_cred(path, verbose)
+
+  if essid == None or passwd == None:
+
+    if verbose:
+      print("[wifi] missing essid or passwd configuration")
+
+    return False
 
   net.active(False)
   time.sleep(1)

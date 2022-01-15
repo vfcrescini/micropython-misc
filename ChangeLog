@@ -1,5 +1,9 @@
 2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* lib/wifi.py:
+
+	  - Now uses xconfig.
+
 	* lib/sensors/am2320.py:
 	* tests/am2320_test.py:
 
