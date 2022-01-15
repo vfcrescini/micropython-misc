@@ -1,5 +1,9 @@
 2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Wifi connection is now verbose.
+
 	* lib/wifi.py:
 
 	  - Now uses xconfig.

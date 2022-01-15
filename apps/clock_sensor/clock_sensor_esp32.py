@@ -52,7 +52,7 @@ if xc.get_int("PIN_LED") > 0:
 
 # connect to wifi
 
-wifi.connect()
+wifi.connect(verbose=True)
 
 # instantiate and start web server
 
