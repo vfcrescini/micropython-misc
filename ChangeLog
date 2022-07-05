@@ -1,3 +1,18 @@
+2022-07-06  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+	* conf/clock_sensor_esp32.conf:
+	* conf/clock_sensor_esp8266.conf:
+
+	  - Added the following new boolean configuration parameters to
+	    enable/disable the display, sensor and LED indicator,
+	    respectively:
+
+	    DISPLAY_FLAG_ENABLED
+	    SENSOR_FLAG_ENABLED
+	    LED_FLAG_ENABLED
+
+
 2022-01-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
