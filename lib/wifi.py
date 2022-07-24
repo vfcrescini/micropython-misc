@@ -32,11 +32,27 @@ def _get_cred(path, verbose):
   return xc.get_str("essid", default=None), xc.get_str("passwd", default=None)
 
 
+# disable ap interface
+
+def _set_ap_off(verbose):
+
+  try:
+    network.WLAN(network.AP_IF).active(False)
+  except:
+    if verbose:
+      print("[wifi] failed to disable AP interface")
+
+  if verbose:
+    print("[wifi] AP interface disabled")
+
+
 # connect to WIFI
 
-def connect(path="wifi.conf", verbose=False):
+def connect(path="wifi.conf", verbose=False, disable_ap=True):
 
-  found = False
+  if disable_ap:
+    _set_ap_off(verbose)
+
   net = network.WLAN(network.STA_IF)
   essid, passwd = _get_cred(path, verbose)
 
@@ -52,6 +68,8 @@ def connect(path="wifi.conf", verbose=False):
   net.active(True)
 
   # dump wifi scan
+
+  found = False
 
   for sessid in map(lambda x: str(x[0], "utf-8"),  net.scan()):
 

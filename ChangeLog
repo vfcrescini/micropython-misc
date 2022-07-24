@@ -1,3 +1,10 @@
+2022-07-24  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/wifi.py:
+
+	  - Disable AP interface by default.
+
+
 2022-07-06  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
