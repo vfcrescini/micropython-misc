@@ -1,3 +1,12 @@
+2022-07-29  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/standalone_sensor_esp32.py:
+	* conf/standalone_sensor_esp8266.conf:
+
+	  - Added new application and config for a standalone sensor
+	    webserver.
+
+
 2022-07-24  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/wifi.py:
