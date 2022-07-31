@@ -43,10 +43,13 @@ if xc.get_bool("LED_FLAG_ENABLED", False) and xc.get_int("PIN_LED") > 0:
 
 # initialise I2C devices
 
-sdev = [
-  bme280.BME280(xm, xt, addr=xc.get_int("SENSOR1_I2C_ADDR", 16)),
-  sht30.SHT30(xm, xt, addr=xc.get_int("SENSOR2_I2C_ADDR", 16))
-]
+sdev = [ None, None ]
+
+sdev[0] = bme280.BME280(xm, xt, addr=xc.get_int("SENSOR1_I2C_ADDR", 16))
+sdev[0].set(oversampling=0x04)
+
+sdev[1] = sht30.SHT30(xm, xt, addr=xc.get_int("SENSOR2_I2C_ADDR", 16))
+sdev[1].set(repeatability=0x02)
 
 # connect to wifi
 
@@ -122,3 +125,4 @@ while True:
 
   if (t_end - t_start) < 1000:
     xt.sleep_ms(1000 - (t_end % 1000))
+
