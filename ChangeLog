@@ -1,3 +1,11 @@
+2022-08-05  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/sensors/mpu6050.py:
+	* tests/mpu6050_test.py:
+
+	  - Added very basic MPU6050 driver and test code.
+
+
 2022-07-31  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/standalone_sensor_esp32.py:
