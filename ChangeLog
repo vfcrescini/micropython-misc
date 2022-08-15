@@ -4,6 +4,11 @@
 
 	  - Added Content-Length header in server response.
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+	* apps/clock_sensor/standalone_sensor_esp32.py:
+
+	  - Added CR+LF after HTTP body content.
+
 
 2022-08-05  Vino Fernando Crescini  <vfcrescini@gmail.com>
 

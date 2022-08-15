@@ -169,7 +169,7 @@ while True:
 
   # serve any pending webserver requests
 
-  trmap = { xc.get_str("HTTP_PATH"): "%16d %7.3f %7.3f %8.3f" % ((t_start // 1000) + 946684800, humi, temp, pres) }
+  trmap = { xc.get_str("HTTP_PATH"): "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
 
   ws.serve(reqmap=trmap, now=t_start)
 
