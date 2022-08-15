@@ -1,3 +1,10 @@
+2022-08-16  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/webserver.py:
+
+	  - Added Content-Length header in server response.
+
+
 2022-08-05  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/sensors/mpu6050.py:

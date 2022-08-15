@@ -16,7 +16,7 @@ import re
 _DEFAULT_PORT = 80
 _DEFAULT_BACKLOG = 2
 _DEFAULT_TIMEOUT = 30000
-_DEFAULT_TEMPLATE = "HTTP/1.0 %STATUS%\r\nContent-type: text/plain; charset=iso-8859-1\r\n\r\n%CONTENT%\r\n"
+_DEFAULT_TEMPLATE = "HTTP/1.0 %STATUS%\r\nContent-Type: text/plain; charset=iso-8859-1\r\nContent-Length: %LENGTH%\r\n\r\n%CONTENT%"
 _DEFAULT_REQMAP = {"/" : ""}
 
 
@@ -116,33 +116,25 @@ class Client(object):
     if i > 0:
       self._ibuf = self._ibuf[:i + 2]
 
-    # check header
+    status = ""
+    content = ""
 
     m = _re_header.match(self._ibuf)
 
     if m == None:
-      self._obuf = template.replace("%STATUS%", "400 Bad Request").replace("%CONTENT%", "400 Bad Request")
-      self._ibuf = ""
-      self._state = Client.STATE_WR
-      return True
+      status = "400 Bad Request"
+      content = status
+    elif m.group(1) != "GET":
+      status = "405 Method Not Allowed"
+      content = status
+    elif m.group(2) not in reqmap:
+      status = "404 Not Found"
+      content = status
+    else:
+      status = "200 OK"
+      content = reqmap[m.group(2)]
 
-    if m.group(1) != "GET":
-      self._obuf = template.replace("%STATUS%", "405 Method Not Allowed").replace("%CONTENT%", "405 Method Not Allowed")
-      self._ibuf = ""
-      self._state = Client.STATE_WR
-      return True
-
-    # check uri
-
-    if m.group(2) not in reqmap:
-      self._obuf = template.replace("%STATUS%", "404 Not Found").replace("%CONTENT%", "404 Not Found")
-      self._ibuf = ""
-      self._state = Client.STATE_WR
-      return True
-
-    # we've made it
-
-    self._obuf = template.replace("%STATUS%", "200 OK").replace("%CONTENT%", reqmap[m.group(2)])
+    self._obuf = template.replace("%STATUS%", status).replace("%LENGTH%", str(len(content))).replace("%CONTENT%", content)
     self._ibuf = ""
     self._state = Client.STATE_WR
 
