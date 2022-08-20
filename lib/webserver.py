@@ -130,13 +130,13 @@ class Client(object):
 
     if m == None:
       status = "400 Bad Request"
-      content = status
+      content = status + "\n"
     elif m.group(1) != "GET":
       status = "405 Method Not Allowed"
-      content = status
+      content = status + "\n"
     elif m.group(2) not in reqmap:
       status = "404 Not Found"
-      content = status
+      content = status + "\n"
     else:
       status = "200 OK"
       content = reqmap[m.group(2)]
