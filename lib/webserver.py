@@ -31,12 +31,11 @@ class Client(object):
   STATE_XX = 3
 
 
-  def __init__(self, xt, sock, addr, expiry=0):
+  def __init__(self, xt, sock, expiry=0):
 
     self._xt = xt
     self._sock = sock
     self._poller = select.poll()
-    self._addr = addr
     self._ibuf = ""
     self._obuf = ""
     self._state = Client.STATE_RD
@@ -272,7 +271,7 @@ class Webserver(object):
       if self._timeout > 0:
         expiry = now + self._timeout
 
-      self._clients.append(Client(self._xt, csock, caddr, expiry))
+      self._clients.append(Client(self._xt, csock, expiry))
 
     # read
 
