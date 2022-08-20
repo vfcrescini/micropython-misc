@@ -90,7 +90,7 @@ class Client(object):
       tmp = ""
 
       try:
-        tmp = self._sock.recv(1024).decode("utf-8")
+        tmp = self._sock.recv(1024)
       except Exception as e:
         self.close()
         return False
@@ -99,7 +99,7 @@ class Client(object):
         self.close()
         return False
 
-      self._buf = self._buf + tmp
+      self._buf = self._buf + tmp.decode("utf-8")
 
     # have we read the full header?
 
@@ -139,7 +139,7 @@ class Client(object):
       status = "200 OK"
       content = reqmap[m.group(2)]
 
-    self._buf = template.replace("%STATUS%", status).replace("%LENGTH%", str(len(content))).replace("%CONTENT%", content)
+    self._buf = template.replace("%STATUS%", status).replace("%LENGTH%", str(len(content))).replace("%CONTENT%", content).encode()
     self._state = Client.STATE_WR
 
     return True
@@ -172,7 +172,7 @@ class Client(object):
       n = 0
 
       try:
-        n = self._sock.send(self._buf.encode())
+        n = self._sock.send(self._buf)
       except Exception as e:
         self.close()
         return False
