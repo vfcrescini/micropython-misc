@@ -2,6 +2,8 @@
 
 	* lib/webserver.py:
 
+	  - Client doesn't need separate input and output buffers.
+
 	  - Replaced select() with poll() for some Micropython ports that
 	    don't have it.
 

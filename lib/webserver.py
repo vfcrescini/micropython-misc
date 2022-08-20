@@ -36,8 +36,7 @@ class Client(object):
     self._xt = xt
     self._sock = sock
     self._poller = select.poll()
-    self._ibuf = ""
-    self._obuf = ""
+    self._buf = ""
     self._state = Client.STATE_RD
     self._expiry = expiry
 
@@ -65,8 +64,8 @@ class Client(object):
   def close(self):
 
     self._sock.close()
-    self._ibuf = ""
-    self._obuf = ""
+
+    self._buf = ""
     self._state = Client.STATE_XX
 
 
@@ -100,11 +99,11 @@ class Client(object):
         self.close()
         return False
 
-      self._ibuf = self._ibuf + tmp
+      self._buf = self._buf + tmp
 
     # have we read the full header?
 
-    if self._ibuf.endswith("\r\n\r\n"):
+    if self._buf.endswith("\r\n\r\n"):
       self._state = Client.STATE_PR
 
     return True
@@ -117,15 +116,15 @@ class Client(object):
 
     # strip out everything after the first line
 
-    i = self._ibuf.find("\r\n")
+    i = self._buf.find("\r\n")
 
     if i > 0:
-      self._ibuf = self._ibuf[:i + 2]
+      self._buf = self._buf[:i + 2]
 
     status = ""
     content = ""
 
-    m = _re_header.match(self._ibuf)
+    m = _re_header.match(self._buf)
 
     if m == None:
       status = "400 Bad Request"
@@ -140,8 +139,7 @@ class Client(object):
       status = "200 OK"
       content = reqmap[m.group(2)]
 
-    self._obuf = template.replace("%STATUS%", status).replace("%LENGTH%", str(len(content))).replace("%CONTENT%", content)
-    self._ibuf = ""
+    self._buf = template.replace("%STATUS%", status).replace("%LENGTH%", str(len(content))).replace("%CONTENT%", content)
     self._state = Client.STATE_WR
 
     return True
@@ -158,7 +156,7 @@ class Client(object):
 
       # are we done yet?
 
-      if len(self._obuf) == 0:
+      if len(self._buf) == 0:
         self.close()
         return True
 
@@ -174,7 +172,7 @@ class Client(object):
       n = 0
 
       try:
-        n = self._sock.send(self._obuf.encode())
+        n = self._sock.send(self._buf.encode())
       except Exception as e:
         self.close()
         return False
@@ -183,7 +181,7 @@ class Client(object):
         self.close()
         return False
 
-      self._obuf = self._obuf[n:]
+      self._buf = self._buf[n:]
 
     # there is still data to be written, but the peer is not ready to receive yet
 
