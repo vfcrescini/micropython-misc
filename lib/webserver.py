@@ -35,11 +35,14 @@ class Client(object):
 
     self._xt = xt
     self._sock = sock
+    self._poller = select.poll()
     self._addr = addr
     self._ibuf = ""
     self._obuf = ""
     self._state = Client.STATE_RD
     self._expiry = expiry
+
+    self._poller.register(self._sock, select.POLLIN | select.POLLOUT)
 
 
   def state(self):
@@ -77,9 +80,13 @@ class Client(object):
 
     while(True):
 
-      rlist, _, _ = select.select([self._sock], [], [], 0)
+      pe = ([ x[1] for x in list(self._poller.poll(0)) ] + [ 0 ])[0]
 
-      if self._sock not in rlist:
+      if pe & select.POLLERR or pe & select.POLLHUP:
+        self.close()
+        return False
+
+      if pe & select.POLLIN == 0:
         break
 
       tmp = ""
@@ -156,9 +163,13 @@ class Client(object):
         self.close()
         return True
 
-      _, wlist, _ = select.select([], [self._sock], [], 0)
+      pe = ([ x[1] for x in list(self._poller.poll(0)) ] + [ 0 ])[0]
 
-      if self._sock not in wlist:
+      if pe & select.POLLERR or pe & select.POLLHUP:
+        self.close()
+        return False
+
+      if pe & select.POLLOUT == 0:
         break
 
       n = 0
@@ -197,15 +208,18 @@ class Webserver(object):
 
     self._clients = []
     self._ssock = None
+    self._poller = None
 
 
   def start(self):
 
     self._ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     self._ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    self._ssock.bind(("", self._port))
+    self._ssock.bind(socket.getaddrinfo("0", self._port, socket.AF_INET, socket.SOCK_STREAM)[0][-1])
     self._ssock.listen(self._backlog)
+
+    self._poller = select.poll()
+    self._poller.register(self._ssock, select.POLLIN)
 
 
   def stop(self):
@@ -246,10 +260,10 @@ class Webserver(object):
     # accept all pending connections
 
     while True:
-    
-      rlist, _, _ = select.select([self._ssock], [], [], 0)
+ 
+      pe = ([ x[1] for x in list(self._poller.poll(0)) ] + [ 0 ])[0]
 
-      if self._ssock not in rlist:
+      if pe & select.POLLIN == 0:
         break
 
       csock, caddr = self._ssock.accept()
