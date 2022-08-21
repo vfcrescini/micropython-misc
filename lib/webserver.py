@@ -19,6 +19,8 @@ _DEFAULT_TIMEOUT = 30000
 _DEFAULT_TEMPLATE = "HTTP/1.0 %STATUS%\r\nContent-Type: text/plain; charset=iso-8859-1\r\nContent-Length: %LENGTH%\r\n\r\n%CONTENT%"
 _DEFAULT_REQMAP = {"/" : ""}
 
+_RECV_BLOCKSIZE = 1024
+
 
 _re_header = re.compile("^([A-Za-z]+) +(\S+) +(HTTP\/[0-9]+\.[0-9]+)\r\n.*")
 
@@ -90,7 +92,7 @@ class Client(object):
       tmp = ""
 
       try:
-        tmp = self._sock.recv(1024)
+        tmp = self._sock.recv(_RECV_BLOCKSIZE)
       except Exception as e:
         self.close()
         return False
