@@ -33,8 +33,8 @@ class HTTPRequest(object):
   STATE_RCV1 = 4
   STATE_RCV2 = 5
   STATE_RCV3 = 6
-  STATE_DONE = 100
-  STATE_ERROR = 1000
+  STATE_DONE = 10
+  STATE_ERROR = 100
 
   def __init__(self):
 
@@ -404,15 +404,12 @@ class HTTPRequest(object):
         self._state = HTTPRequest.STATE_ERROR
         return -11, self._state, "Failed to read response body"
 
-      elif self._state == HTTPRequest.STATE_DONE:
-
-        return 0, self._state, ""
-
       else:
 
-        # unknown state; shouldn't happen
+        if self._state not in [getattr(HTTPRequest, i) for i in dir(HTTPRequest) if i.startswith("STATE_")]:
+          return 2, self._state, "Invalid state"
 
-        return 2, self._state, "Invalid state"
+        return 0, self._state, ""
 
 
   # get response after state is STATE_DONE
