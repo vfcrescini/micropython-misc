@@ -288,7 +288,7 @@ class HTTPRequest(object):
 
         if rv < 0:
           self._state = HTTPRequest.STATE_ERROR
-          return -3, self._state, ":send() %s" % (errno.errcode[e] if e in errno.errcode else "unknown")
+          return -3, self._state, ":send() %s" % (errno.errorcode[e] if e in errno.errorcode else "unknown")
 
         if rv > 0:
           return 0, self._state, ""
@@ -317,7 +317,7 @@ class HTTPRequest(object):
 
           if rv < 0:
             self._state = HTTPRequest.STATE_ERROR
-            return -5, self._state, "recv() failed: %s" % (errno.errcode[e] if e in errno.errcode else "unknown")
+            return -5, self._state, "recv() failed: %s" % (errno.errorcode[e] if e in errno.errorcode else "unknown")
 
           if rv > 0:
             return 0, self._state, ""
@@ -351,7 +351,7 @@ class HTTPRequest(object):
 
           if rv < 0:
             self._state = HTTPRequest.STATE_ERROR
-            return -8, self._state, "recv() failed: %s" % (errno.errcode[e] if e in errno.errcode else "unknown")
+            return -8, self._state, "recv() failed: %s" % (errno.errorcode[e] if e in errno.errorcode else "unknown")
 
           if rv > 0:
             return 0, self._state, ""
@@ -376,7 +376,7 @@ class HTTPRequest(object):
 
         if rv < 0:
           self._state = HTTPRequest.STATE_ERROR
-          return -10, self._state, "recv() failed: %s" % (errno.errcode[e] if e in errno.errcode else "unknown")
+          return -10, self._state, "recv() failed: %s" % (errno.errorcode[e] if e in errno.errorcode else "unknown")
 
         if rv > 0:
           return 0, self._state, ""
