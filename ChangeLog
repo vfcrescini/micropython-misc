@@ -4,6 +4,8 @@
 
 	  - Added rudimentary GET only HTTP 1.0 client.
 
+	  - Now uses poll() to detect connection status.
+
 
 2022-08-20  Vino Fernando Crescini  <vfcrescini@gmail.com>
 

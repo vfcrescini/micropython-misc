@@ -9,6 +9,7 @@
 
 import errno
 import socket
+import select
 import re
 
 
@@ -44,6 +45,7 @@ class HTTPRequest(object):
     self._buf = ""
     self._state = HTTPRequest.STATE_NULL
     self._socket = None
+    self._poller = None
 
     self._rsp_status = (0, "")
     self._rsp_headers = {}
@@ -220,8 +222,10 @@ class HTTPRequest(object):
     self._buf = ("%s %s HTTP/1.0\r\n\r\n" % (self._method, self._path)).encode()
     self._state = HTTPRequest.STATE_INIT
     self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self._poller = select.poll()
 
     self._socket.setblocking(0)
+    self._poller.register(self._socket, select.POLLIN | select.POLLOUT)
 
     return 0
 
@@ -264,17 +268,15 @@ class HTTPRequest(object):
       elif self._state == HTTPRequest.STATE_CONN:
 
         # connection has been initiated; make sure it goes through
-        # we could select() or poll(), but simpler to just attempt
-        # a zero-byte send()
 
-        try:
-          self._socket.send(b"")
-        except Exception as e:
-          if hasattr(e, "errno"):
-            if e.errno == errno.EAGAIN:
-              return 0, self._state, ""
+        pe = ([ x[1] for x in list(self._poller.poll(0)) ] + [ 0 ])[0]
 
-          return -2, self._state, "send() failed: %s" % (e)
+        if pe & select.POLLERR > 0 or pe & select.POLLHUP > 0:
+          self._state = HTTPRequest.STATE_ERROR
+          return -2, self._state, "connect() failed"
+
+        if pe & select.POLLOUT == 0:
+          return 0, self._state, ""
 
         # connected! proceed to the next step
 
