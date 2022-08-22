@@ -100,7 +100,7 @@ class HTTPRequest(object):
       t = self._socket.recv(blocksize)
     except Exception as e:
       if hasattr(e, "errno"):
-        if e.errno == errno.EAGAIN or e.errno:
+        if e.errno == errno.EAGAIN:
           return 1, 0
         return -1, e.errno
       return -1, 0
