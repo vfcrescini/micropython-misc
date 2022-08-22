@@ -1,3 +1,10 @@
+2022-08-23  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/webclient.py:
+
+	  - Added rudimentary GET only HTTP 1.0 client.
+
+
 2022-08-20  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/webserver.py:
