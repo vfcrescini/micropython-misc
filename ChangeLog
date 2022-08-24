@@ -1,3 +1,11 @@
+2022-08-25  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/webclient.py:
+	* lib/webserver.py:
+
+	  - Reduced blocksize to reduce memory requirement.
+
+
 2022-08-23  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/webclient.py:
