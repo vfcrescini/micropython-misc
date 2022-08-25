@@ -37,9 +37,10 @@ xm = xmachine.XMachine(bus=xc.get_int("I2C_BUS"), sda=xc.get_int("PIN_I2C_SDA"),
 # initialise LED
 
 led_pin = None
+led_invert = xc.get_bool("LED_FLAG_INVERT")
 
 if xc.get_int("PIN_LED", 10, 0) > 0:
-  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if xc.get_bool("LED_FLAG_INVERT") else 0))
+  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if led_invert else 0))
 
 # initialise I2C devices
 
@@ -67,8 +68,20 @@ humi = 0.0
 temp = 0.0
 pres = 0.0
 
-probe_secs = [ xc.get_int("INTERVAL_PROBE"), xc.get_int("INTERVAL_PROBE") - 1 ]
-tsync_secs = xc.get_int("INTERVAL_TSYNC")
+tick_period = xc.get_int("TICK_PERIOD")
+
+interval_probe = xc.get_int("INTERVAL_PROBE") * (1000 / tick_period)
+interval_tsync = xc.get_int("INTERVAL_TSYNC") * (1000 / tick_period)
+
+count_probe = [ interval_probe - 1, interval_probe - 2 ]
+count_tsync = interval_tsync
+
+ntp_host = xc.get_str("NTP_HOST")
+http_path = xc.get_str("HTTP_PATH")
+
+# we don't need this anymore
+
+del xc
 
 # align loop to the nearest clock second
 
@@ -83,46 +96,45 @@ while True:
   # LED on
 
   if led_pin != None:
-    led_pin.value(0 if xc.get_bool("LED_FLAG_INVERT") else 1)
+    led_pin.value(0 if led_invert else 1)
 
   # do sensor probes at the specified interval
   # Use BME280's pressure, and SHT30's humidity and temperature
 
-  if probe_secs[0] >= xc.get_int("INTERVAL_PROBE"):
-    probe_secs[0] = 0
+  if count_probe[0] >= interval_probe:
+    count_probe[0] = 0
     _, _, pres = sdev[0].get()
   else:
-    probe_secs[0] = probe_secs[0] + 1
+    count_probe[0] = count_probe[0] + 1
 
-  if probe_secs[1] >= xc.get_int("INTERVAL_PROBE"):
-    probe_secs[1] = 0
+  if count_probe[1] >= interval_probe:
+    count_probe[1] = 0
     humi, temp = sdev[1].get()
   else:
-    probe_secs[1] = probe_secs[1] + 1
+    count_probe[1] = count_probe[1] + 1
 
   # do time sync at the specified interval
 
-  if tsync_secs >= xc.get_int("INTERVAL_TSYNC"):
-    tsync_secs = 0
-    xntptime.update(ntp_host=xc.get_str("NTP_HOST"), attempts=1)
+  if count_tsync >= interval_tsync:
+    count_tsync = 0
+    xntptime.update(ntp_host=ntp_host, attempts=1)
   else:
-    tsync_secs = tsync_secs + 1
+    count_tsync = count_tsync + 1
 
   # serve any pending webserver requests
 
-  trmap = { xc.get_str("HTTP_PATH"): "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
+  trmap = { http_path: "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
 
   ws.serve(reqmap=trmap, now=t_start)
 
   # LED off
 
   if led_pin != None:
-    led_pin.value(1 if xc.get_bool("LED_FLAG_INVERT") else 0)
+    led_pin.value(1 if led_invert else 0)
 
   # sleep until the end of the second
 
   t_end = xt.time_ms()
 
-  if (t_end - t_start) < 1000:
-    xt.sleep_ms(1000 - (t_end % 1000))
-
+  if (t_end - t_start) < tick_period:
+    xt.sleep_ms(tick_period - (t_end % tick_period))

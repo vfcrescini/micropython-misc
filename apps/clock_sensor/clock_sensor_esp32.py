@@ -35,6 +35,8 @@ ddev = None
 if xc.get_int("DISPLAY_I2C_ADDR", 16, 0x00) > 0x00:
   ddev = hd44780.HD44780(xm, xt, addr=xc.get_int("DISPLAY_I2C_ADDR", 16))
 
+d4flag = xc.get_bool("DISPLAY_FLAG_4LINES")
+
 # init sensor
 
 sdev = None
@@ -45,9 +47,10 @@ if xc.get_int("SENSOR_I2C_ADDR", 16, 0x00) > 0x00:
 # init led
 
 led_pin = None
+led_invert = xc.get_bool("LED_FLAG_INVERT")
 
 if xc.get_int("PIN_LED", 10, 2) > 0:
-  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if xc.get_bool("LED_FLAG_INVERT") else 0))
+  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if led_invert else 0))
 
 # clear display
 
@@ -70,12 +73,23 @@ humi = 0.0
 temp = 0.0
 pres = 0.0
 
-probe_secs = xc.get_int("INTERVAL_PROBE")
-tsync_secs = xc.get_int("INTERVAL_TSYNC")
+linebuf_cur = [""] * (4 if d4flag else 2)
+linebuf_new = [""] * (4 if d4flag else 2)
 
-if ddev != None:
-  linebuf_cur = [""] * (4 if xc.get_bool("DISPLAY_FLAG_4LINES") else 2)
-  linebuf_new = [""] * (4 if xc.get_bool("DISPLAY_FLAG_4LINES") else 2)
+tick_period = xc.get_int("TICK_PERIOD")
+
+interval_probe = xc.get_int("INTERVAL_PROBE") * (1000 / tick_period)
+interval_tsync = xc.get_int("INTERVAL_TSYNC") * (1000 / tick_period)
+
+count_probe = interval_probe - 1
+count_tsync = interval_tsync
+
+ntp_host = xc.get_str("NTP_HOST")
+http_path = xc.get_str("HTTP_PATH")
+
+# we don't need this anymore
+
+del xc
 
 # align loop to the nearest clock second
 
@@ -90,7 +104,7 @@ while True:
   # LED on
 
   if led_pin != None:
-    led_pin.value(0 if xc.get_bool("LED_FLAG_INVERT") else 1)
+    led_pin.value(0 if led_invert else 1)
 
   if ddev != None:
 
@@ -98,7 +112,7 @@ while True:
 
     lt = xt.localtime(t_start // 1000)
 
-    if xc.get_bool("DISPLAY_FLAG_4LINES"):
+    if d4flag:
 
       linebuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
       linebuf_new[1] = "Humidity:    %6.1f%%" % (humi)
@@ -124,49 +138,49 @@ while True:
 
     # update line 3 only if there is a change
 
-    if xc.get_bool("DISPLAY_FLAG_4LINES") and linebuf_cur[2] != linebuf_new[2]:
+    if d4flag and linebuf_cur[2] != linebuf_new[2]:
       linebuf_cur[2] = linebuf_new[2]
       ddev.show(linebuf_cur[2], 3)
 
     # update line 4 only if there is a change
 
-    if xc.get_bool("DISPLAY_FLAG_4LINES") and linebuf_cur[3] != linebuf_new[3]:
+    if d4flag and linebuf_cur[3] != linebuf_new[3]:
       linebuf_cur[3] = linebuf_new[3]
       ddev.show(linebuf_cur[3], 4)
 
   # do sensor probe at the specified interval
 
-  if probe_secs >= xc.get_int("INTERVAL_PROBE"):
-    probe_secs = 0
+  if count_probe >= interval_probe:
+    count_probe = 0
 
     if sdev != None:
       humi, temp, pres = sdev.get()
 
   else:
-    probe_secs = probe_secs + 1
+    count_probe = count_probe + 1
 
   # do time sync at the specified interval
 
-  if tsync_secs >= xc.get_int("INTERVAL_TSYNC"):
-    tsync_secs = 0
-    xntptime.update(ntp_host=xc.get_str("NTP_HOST"), attempts=1)
+  if count_tsync >= interval_tsync:
+    count_tsync = 0
+    xntptime.update(ntp_host=ntp_host, attempts=1)
   else:
-    tsync_secs = tsync_secs + 1
+    count_tsync = count_tsync + 1
 
   # serve any pending webserver requests
 
-  trmap = { xc.get_str("HTTP_PATH"): "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
+  trmap = { http_path: "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
 
   ws.serve(reqmap=trmap, now=t_start)
 
   # LED off
 
   if led_pin != None:
-    led_pin.value(1 if xc.get_bool("LED_FLAG_INVERT") else 0)
+    led_pin.value(1 if led_invert else 0)
 
   # sleep until the end of the second
 
   t_end = xt.time_ms()
 
-  if (t_end - t_start) < 1000:
-    xt.sleep_ms(1000 - (t_end % 1000))
+  if (t_end - t_start) < tick_period:
+    xt.sleep_ms(tick_period - (t_end % tick_period))

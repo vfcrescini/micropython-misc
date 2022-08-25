@@ -3,7 +3,6 @@
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
 	  - Tidy up: removed conditional module loading.
-
 	
 	* apps/clock_sensor/clock_sensor_esp32.py:
 	* apps/clock_sensor/standalone_sensor_esp32.py:
@@ -12,6 +11,8 @@
 	* conf/standalone_sensor_esp8266.conf:
 
 	  - Removed redundant *_ENABLED configuration parameters.
+
+	  - Added TICK_PERIOD (msecs per tick) configuration parameter.
 
 
 2022-08-25  Vino Fernando Crescini  <vfcrescini@gmail.com>
