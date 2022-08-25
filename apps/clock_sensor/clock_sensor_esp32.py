@@ -7,66 +7,52 @@
 # clock weather sensor webserver for ESP32/ESP8266
 
 
-# need to import this first to know what we need
-
-import xconfig
-
-# initialise xconfig instance
-
-xc = xconfig.XConfig(path="clock_sensor.conf")
-
-if xc.get_bool("SENSOR_FLAG_ENABLED", False):
-  import bme280
-
-if xc.get_bool("DISPLAY_FLAG_ENABLED", False):
-  import hd44780
-
-
 # import order is from largest to smallest
 # this is to ensure that there is enough memory to actually load them on
 # somthing like the esp8266
 
-
+import bme280
+import hd44780
 import webserver
 import xtime
 import xmachine
 import wifi
+import xconfig
 import xntptime
-
-if xc.get_bool("LED_FLAG_ENABLED", False):
-  import machine
+import machine
 
 
-# initialise xtime instance
+# initialise stuff
 
+xc = xconfig.XConfig(path="clock_sensor.conf")
 xt = xtime.XTime()
-
-# initialise xmachine instance
-
 xm = xmachine.XMachine(bus=xc.get_int("I2C_BUS"), sda=xc.get_int("PIN_I2C_SDA"), scl=xc.get_int("PIN_I2C_SCL"))
 
-# initialise I2C devices
+# init display
 
 ddev = None
-sdev = None
 
-if xc.get_bool("DISPLAY_FLAG_ENABLED", False):
+if xc.get_int("DISPLAY_I2C_ADDR", 16, 0x00) > 0x00:
   ddev = hd44780.HD44780(xm, xt, addr=xc.get_int("DISPLAY_I2C_ADDR", 16))
 
-if xc.get_bool("SENSOR_FLAG_ENABLED", False):
+# init sensor
+
+sdev = None
+
+if xc.get_int("SENSOR_I2C_ADDR", 16, 0x00) > 0x00:
   sdev = bme280.BME280(xm, xt, addr=xc.get_int("SENSOR_I2C_ADDR", 16))
+
+# init led
+
+led_pin = None
+
+if xc.get_int("PIN_LED", 10, 2) > 0:
+  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if xc.get_bool("LED_FLAG_INVERT") else 0))
 
 # clear display
 
 if ddev != None:
   ddev.clear()
-
-# init LED
-
-led_pin = None
-
-if xc.get_bool("LED_FLAG_ENABLED", False) and xc.get_int("PIN_LED") > 0:
-  led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if xc.get_bool("LED_FLAG_INVERT") else 0))
 
 # connect to wifi
 

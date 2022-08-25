@@ -38,7 +38,7 @@ xm = xmachine.XMachine(bus=xc.get_int("I2C_BUS"), sda=xc.get_int("PIN_I2C_SDA"),
 
 led_pin = None
 
-if xc.get_bool("LED_FLAG_ENABLED", False) and xc.get_int("PIN_LED") > 0:
+if xc.get_int("PIN_LED", 10, 0) > 0:
   led_pin = machine.Pin(xc.get_int("PIN_LED"), mode=machine.Pin.OUT, value=(1 if xc.get_bool("LED_FLAG_INVERT") else 0))
 
 # initialise I2C devices
