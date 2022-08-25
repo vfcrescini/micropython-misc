@@ -9,6 +9,7 @@
 	* apps/clock_sensor/standalone_sensor_esp32.py:
 	* conf/clock_sensor_esp32.conf:
 	* conf/clock_sensor_esp8266.conf:
+	* conf/standalone_sensor_esp8266.conf:
 
 	  - Removed redundant *_ENABLED configuration parameters.
 
