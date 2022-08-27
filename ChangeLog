@@ -1,3 +1,11 @@
+2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+	* apps/clock_sensor/standalone_sensor.py:
+
+	  - Fixed off-by-one interval calculation error.
+
+
 2022-08-26  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:

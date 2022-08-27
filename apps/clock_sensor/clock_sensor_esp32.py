@@ -78,8 +78,8 @@ linebuf_new = [""] * (4 if d4flag else 2)
 
 tick_period = xc.get_int("TICK_PERIOD")
 
-interval_probe = xc.get_int("INTERVAL_PROBE") * (1000 / tick_period)
-interval_tsync = xc.get_int("INTERVAL_TSYNC") * (1000 / tick_period)
+interval_probe = xc.get_int("INTERVAL_PROBE") * (1000 / tick_period) - 1
+interval_tsync = xc.get_int("INTERVAL_TSYNC") * (1000 / tick_period) - 1
 
 count_probe = interval_probe - 1
 count_tsync = interval_tsync
