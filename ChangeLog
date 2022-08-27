@@ -12,6 +12,11 @@
 	  - Added INTERVAL_DSPLY configuration parameter to control
 	    display refesh interval.
 
+	* apps/clock_sensor/clock_sensor_rpi.py:
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Fixed display text formatting.
+
 
 2022-08-26  Vino Fernando Crescini  <vfcrescini@gmail.com>
 

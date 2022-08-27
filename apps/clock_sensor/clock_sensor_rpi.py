@@ -159,9 +159,9 @@ if __name__ == "__main__":
     if fflag:
 
       linebuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-      linebuf_new[1] = "Humidity:    %6.1f%%" % (humi)
+      linebuf_new[1] = "Humidity:     %5.1f%%" % (humi)
       linebuf_new[2] = "Temperature: %6.1fC" % (temp)
-      linebuf_new[3] = "Pressure: %7.1fhPa" % (pres)
+      linebuf_new[3] = "Pressure:  %6.1fhPa" % (pres)
 
     else:
 
