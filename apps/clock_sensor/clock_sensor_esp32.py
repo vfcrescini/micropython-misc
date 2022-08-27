@@ -78,9 +78,11 @@ linebuf_new = [""] * (4 if d4flag else 2)
 
 tick_period = xc.get_int("TICK_PERIOD")
 
+interval_dsply = xc.get_int("INTERVAL_DSPLY") * (1000 / tick_period) - 1
 interval_probe = xc.get_int("INTERVAL_PROBE") * (1000 / tick_period) - 1
 interval_tsync = xc.get_int("INTERVAL_TSYNC") * (1000 / tick_period) - 1
 
+count_dsply = interval_dsply - 2
 count_probe = interval_probe - 1
 count_tsync = interval_tsync
 
@@ -108,56 +110,62 @@ while True:
 
   if ddev != None:
 
-    # compose strings
+    if count_dsply >= interval_dsply:
+      count_dsply = 0
 
-    lt = xt.localtime(t_start // 1000)
-
-    if d4flag:
-
-      linebuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-      linebuf_new[1] = "Humidity:    %6.1f%%" % (humi)
-      linebuf_new[2] = "Temperature: %6.1fC" % (temp)
-      linebuf_new[3] = "Pressure: %7.1fhPa" % (pres)
+      # compose strings
+  
+      lt = xt.localtime(t_start // 1000)
+  
+      if d4flag:
+  
+        linebuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
+        linebuf_new[1] = "Humidity:    %6.1f%%" % (humi)
+        linebuf_new[2] = "Temperature: %6.1fC" % (temp)
+        linebuf_new[3] = "Pressure: %7.1fhPa" % (pres)
+  
+      else:
+  
+        linebuf_new[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
+        linebuf_new[1] = "% 5.1fC %6.1fhPa" % (temp, pres)
+  
+      # update line 1 only if there is a change
+  
+      if linebuf_cur[0] != linebuf_new[0]:
+        linebuf_cur[0] = linebuf_new[0]
+        ddev.show(linebuf_cur[0], 1)
+  
+      # update line 2 only if there is a change
+  
+      if linebuf_cur[1] != linebuf_new[1]:
+        linebuf_cur[1] = linebuf_new[1]
+        ddev.show(linebuf_cur[1], 2)
+  
+      # update line 3 only if there is a change
+  
+      if d4flag and linebuf_cur[2] != linebuf_new[2]:
+        linebuf_cur[2] = linebuf_new[2]
+        ddev.show(linebuf_cur[2], 3)
+  
+      # update line 4 only if there is a change
+  
+      if d4flag and linebuf_cur[3] != linebuf_new[3]:
+        linebuf_cur[3] = linebuf_new[3]
+        ddev.show(linebuf_cur[3], 4)
 
     else:
 
-      linebuf_new[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
-      linebuf_new[1] = "% 5.1fC %6.1fhPa" % (temp, pres)
-
-    # update line 1 only if there is a change
-
-    if linebuf_cur[0] != linebuf_new[0]:
-      linebuf_cur[0] = linebuf_new[0]
-      ddev.show(linebuf_cur[0], 1)
-
-    # update line 2 only if there is a change
-
-    if linebuf_cur[1] != linebuf_new[1]:
-      linebuf_cur[1] = linebuf_new[1]
-      ddev.show(linebuf_cur[1], 2)
-
-    # update line 3 only if there is a change
-
-    if d4flag and linebuf_cur[2] != linebuf_new[2]:
-      linebuf_cur[2] = linebuf_new[2]
-      ddev.show(linebuf_cur[2], 3)
-
-    # update line 4 only if there is a change
-
-    if d4flag and linebuf_cur[3] != linebuf_new[3]:
-      linebuf_cur[3] = linebuf_new[3]
-      ddev.show(linebuf_cur[3], 4)
+      count_dsply = count_dsply + 1
 
   # do sensor probe at the specified interval
 
-  if count_probe >= interval_probe:
-    count_probe = 0
-
-    if sdev != None:
+  if sdev != None:
+    if count_probe >= interval_probe:
+      count_probe = 0
+  
       humi, temp, pres = sdev.get()
-
-  else:
-    count_probe = count_probe + 1
+    else:
+      count_probe = count_probe + 1
 
   # do time sync at the specified interval
 
