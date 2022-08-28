@@ -1,5 +1,10 @@
 2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Added support for simultaneous display of local sensor and remote
+	    remote sensor queried over HTTP.
+
 	* lib/webclient.py:
 	* lib/webserver.py:
 

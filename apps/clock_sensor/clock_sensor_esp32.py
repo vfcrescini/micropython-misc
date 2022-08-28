@@ -13,6 +13,7 @@
 
 import bme280
 import hd44780
+import webclient
 import webserver
 import xtime
 import xmachine
@@ -20,6 +21,7 @@ import wifi
 import xconfig
 import xntptime
 import machine
+import re
 
 
 # connect to wifi
@@ -32,7 +34,7 @@ xc = xconfig.XConfig(path="clock_sensor.conf")
 xt = xtime.XTime()
 xm = xmachine.XMachine(bus=xc.get_int("I2C_BUS"), sda=xc.get_int("I2C_PIN_SDA"), scl=xc.get_int("I2C_PIN_SCL"))
 
-tick_period = xc.get_int("TICK_PERIOD")
+tick_period = xc.get_int("TICK_PERIOD", 10, 1000)
 
 # init display
 
@@ -41,7 +43,7 @@ dsply_dev = None
 if xc.get_int("DISPLAY_I2C_ADDR", 16, 0x00) > 0x00:
 
   dsply_dev = hd44780.HD44780(xm, xt, addr=xc.get_int("DISPLAY_I2C_ADDR", 16))
-  dsply_interval = int(xc.get_int("DISPLAY_INTERVAL") * (1000 / tick_period)) - 1
+  dsply_interval = int(xc.get_int("DISPLAY_INTERVAL", 10, 5) * (1000 / tick_period)) - 1
   dsply_count = dsply_interval - 2
   dsply_mode = xc.get_int("DISPLAY_MODE", 10, 0)
   dsply_lbuf_cur = [""] * (4 if dsply_mode > 0 else 2)
@@ -58,7 +60,7 @@ snsr1_dev = None
 if xc.get_int("SENSOR_I2C_ADDR", 16, 0x00) > 0x00:
 
   snsr1_dev = bme280.BME280(xm, xt, addr=xc.get_int("SENSOR_I2C_ADDR", 16))
-  snsr1_interval = xc.get_int("SENSOR_INTERVAL") * (1000 / tick_period) - 1
+  snsr1_interval = xc.get_int("SENSOR_INTERVAL", 10, 5) * (1000 / tick_period) - 1
   snsr1_count = snsr1_interval - 1
 
   print("Sensor1 initialised; i2c_addr=0x%0X" % (xc.get_int("SENSOR_I2C_ADDR", 16)))
@@ -87,13 +89,27 @@ if xc.get_int("WEBSRV_PORT", 10, 0) > 0 and len(xc.get_str("WEBSRV_PATH")) > 0:
 
   print("Webserver initialised; port=%d; path=%s" % (xc.get_int("WEBSRV_PORT", 10), websrv_path))
 
+# init webclient
+
+webclt = None
+
+if len(xc.get_str("REMOTE_HOST", "")) > 0:
+
+  webclt = webclient.HTTPRequest()
+  webclt_interval = xc.get_int("REMOTE_INTERVAL", 10, 5) * (1000 / tick_period) - 1
+  webclt_count = webclt_interval - 3
+
+  webclt.set(xc.get_str("REMOTE_HOST"), xc.get_str("REMOTE_PATH", "/"))
+
+  print("Webclient initialised; host=%s; path=%s" % (xc.get_str("REMOTE_HOST"), xc.get_str("REMOTE_PATH", "/")))
+
 # init NTP
 
 ntp_host = xc.get_str("NTP_HOST", "")
 
 if len(ntp_host) > 0:
 
-  ntp_interval = xc.get_int("NTP_INTERVAL") * (1000 / tick_period) - 1
+  ntp_interval = xc.get_int("NTP_INTERVAL", 10, 300) * (1000 / tick_period) - 1
   ntp_count = ntp_interval
 
   print("NTP sync initialised; host=%s" % (ntp_host))
@@ -102,9 +118,9 @@ print("Starting...")
 
 # init global variables
 
-humi = 0.0
-temp = 0.0
-pres = 0.0
+humi = [ 0.0 ] * 2
+temp = [ 0.0 ] * 2
+pres = [ 0.0 ] * 2
 
 # we don't need this anymore
 
@@ -137,14 +153,21 @@ while True:
       if dsply_mode == 1:
 
         dsply_lbuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-        dsply_lbuf_new[1] = "Humidity:     %5.1f%%" % (humi)
-        dsply_lbuf_new[2] = "Temperature: %6.1fC" % (temp)
-        dsply_lbuf_new[3] = "Pressure:  %6.1fhPa" % (pres)
+        dsply_lbuf_new[1] = "Humidity:     %5.1f%%" % (humi[0])
+        dsply_lbuf_new[2] = "Temperature: %6.1fC" % (temp[0])
+        dsply_lbuf_new[3] = "Pressure:  %6.1fhPa" % (pres[0])
+
+      if dsply_mode == 2:
+
+        dsply_lbuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
+        dsply_lbuf_new[1] = " %5.1f%%     %5.1f%%" % (humi[1], humi[0])
+        dsply_lbuf_new[2] = "%6.1fC    %6.1fC" % (temp[1], temp[0])
+        dsply_lbuf_new[3] = "%6.1fhPa  %6.1fhPa" % (pres[1], pres[0])
 
       else:
 
         dsply_lbuf_new[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
-        dsply_lbuf_new[1] = "% 5.1fC %6.1fhPa" % (temp, pres)
+        dsply_lbuf_new[1] = "% 5.1fC %6.1fhPa" % (temp[0], pres[0])
   
       # update line 1 only if there is a change
   
@@ -180,9 +203,37 @@ while True:
     if snsr1_count >= snsr1_interval:
       snsr1_count = 0
   
-      humi, temp, pres = snsr1_dev.get()
+      humi[0], temp[0], pres[0] = snsr1_dev.get()
     else:
       snsr1_count = snsr1_count + 1
+
+  # do web requests at the specified interval
+
+  if webclt != None:
+    if webclt_count >= webclt_interval:
+
+      rsp = webclt.request()
+
+      if rsp[0] == 0 and rsp[1] == 10:
+        webclt_count = 0
+
+        rsp = webclt.get_response()
+
+        if rsp[0][0] == 200:
+
+          mo = re.match("^\s*([0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s*$", rsp[2])
+
+          if mo != None:
+            humi[1] = float(mo.group(2))
+            temp[1] = float(mo.group(3))
+            pres[1] = float(mo.group(4))
+
+        webclt.reset()
+      elif rsp[0] != 0:
+        webclt_count = 0
+        webclt.reset()
+    else:
+      webclt_count = webclt_count + 1
 
   # do time sync at the specified interval
 
@@ -196,7 +247,7 @@ while True:
   # serve any pending webserver requests
 
   if websrv != None:
-    trmap = { websrv_path: "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi, temp, pres) }
+    trmap = { websrv_path: "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi[0], temp[0], pres[0]) }
     websrv.serve(reqmap=trmap, now=t_start)
 
   # LED off
