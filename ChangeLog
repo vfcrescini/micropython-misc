@@ -3,6 +3,46 @@
 	* apps/clock_sensor/clock_sensor_esp32.py:
 	* apps/clock_sensor/standalone_sensor.py:
 
+	  - Added initialisation console messages.
+
+	  - Reordered global var initialisation.
+
+
+	* conf/clock_sensor_esp32.conf:
+	* conf/clock_sensor_esp8266.conf:
+
+	  - Renamed the following config parameters:
+
+	    * PIN_LED --> LED_PIN
+	    * PIN_I2C_SDA --> I2C_PIN_SDA
+	    * PIN_I2C_SCL --> I2C_PIN_SCL
+	    * DISPLAY_FLAG_4LINES --> DISPLAY_MODE
+	    * INTERVAL_DSPLY --> DISPLAY_INTERVAL
+	    * INTERVAL_PROBE --> SENSOR_INTERVAL
+	    * INTERVAL_TSYNC --> NTP_INTERVAL
+	    * HTTP_PATH --> WEBSRV_PATH
+	    * HTTP_PORT --> WEBSRV_PORT
+	    * HTTP_TIMEOUT --> WEBSRV_TIMEOUT
+
+	* conf/standalone_sensor.conf:
+
+	  - Renamed the following config parameters:
+
+	    * PIN_LED --> LED_PIN
+	    * PIN_I2C_SDA --> I2C_PIN_SDA
+	    * PIN_I2C_SCL --> I2C_PIN_SCL
+	    * INTERVAL_PROBE --> SENSOR1_INTERVAL, SENSOR2_INTERVAL
+	    * INTERVAL_TSYNC --> NTP_INTERVAL
+	    * HTTP_PATH --> WEBSRV_PATH
+	    * HTTP_PORT --> WEBSRV_PORT
+	    * HTTP_TIMEOUT --> WEBSRV_TIMEOUT
+
+
+2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+	* apps/clock_sensor/standalone_sensor.py:
+
 	  - Fixed off-by-one interval calculation error.
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
