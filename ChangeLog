@@ -1,5 +1,13 @@
 2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* lib/webclient.py:
+	* lib/webserver.py:
+
+	  - Reduce read buffer size to 32 B.
+	  
+
+2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
 	* apps/clock_sensor/clock_sensor_esp32.py:
 	* apps/clock_sensor/standalone_sensor.py:
 

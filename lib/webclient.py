@@ -16,7 +16,7 @@ import re
 _DEFAULT_PORT = 80
 _DEFAULT_METHOD = "GET"
 
-_RECV_BLOCKSIZE = 64
+_RECV_BLOCKSIZE = 32
 
 
 _re_line = re.compile("\r?\n")
