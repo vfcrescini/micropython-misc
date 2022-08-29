@@ -1,5 +1,9 @@
 2022-08-29  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Added support for string-type GPIO pin identifier.
+
 	* conf/clock_sensor/clock_sensor_picow.conf:
 
 	  - Added clock_sensor.py configuration for Raspberry Pi Pico W.

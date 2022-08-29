@@ -69,12 +69,19 @@ if xc.get_int("SENSOR_I2C_ADDR", 16, 0x00) > 0x00:
 
 led_dev = None
 
-if xc.get_int("LED_PIN", 10, 0) > 0:
+if len(xc.get_str("LED_PIN", "")) > 0:
 
-  led_dev = machine.Pin(xc.get_int("LED_PIN"), mode=machine.Pin.OUT, value=0)
+  pin = None
+
+  try:
+    pin = int(xc.get_str("LED_PIN"))
+  except:
+    pin = xc.get_str("LED_PIN")
+
+  led_dev = machine.Pin(pin, mode=machine.Pin.OUT, value=0)
   led_invert = xc.get_bool("LED_FLAG_INVERT")
 
-  print("LED initialised; pin=%d" % (xc.get_int("LED_PIN", 10)))
+  print("LED initialised; pin=%s" % (str(pin)))
 
 # init webserver
 
