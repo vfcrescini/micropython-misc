@@ -1,3 +1,10 @@
+2022-08-29  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* conf/clock_sensor/clock_sensor_picow.conf:
+
+	  - Added clock_sensor.py configuration for Raspberry Pi Pico W.
+
+
 2022-08-28  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
