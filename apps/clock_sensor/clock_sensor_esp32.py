@@ -7,21 +7,342 @@
 # clock weather sensor webserver for ESP32/ESP8266
 
 
-# import order is from largest to smallest
-# this is to ensure that there is enough memory to actually load them on
-# somthing like the esp8266
-
-import bme280
-import hd44780
-import webclient
-import webserver
 import xtime
 import xmachine
-import wifi
 import xconfig
-import xntptime
-import machine
+import wifi
 import re
+
+
+class Periodic(object):
+
+  _cnt = 0
+
+  def __init__(self, xc, tick_period, xcprefix):
+
+    Periodic._cnt = Periodic._cnt + 1
+
+    self._tick_max = 0
+    self._tick_cnt = 0
+
+    # interval = 0 means _fire() at every tick
+    # interval > 0 means _fire() every interval seconds
+
+    interval = xc.get_int(xcprefix + "_INTERVAL", 10, 1)
+
+    if interval > 0:
+
+      self._tick_max = interval * (1000 / tick_period) - 1
+      self._tick_cnt = self._tick_max - Periodic._cnt
+
+
+  def _fire(self, param):
+
+    return True
+
+
+  def tick(self, param):
+
+    if self._tick_cnt >= self._tick_max:
+
+      if self._fire(param):
+        self._tick_cnt = 0
+
+    else:
+
+      self._tick_cnt = self._tick_cnt + 1
+
+
+class Sensor(Periodic):
+
+  def __init__(self, xc, tick_period, xcprefix):
+
+    Periodic.__init__(self, xc, tick_period, xcprefix)
+
+
+  def _fire(self, param):
+
+    rv = self._get()
+
+    if rv == None:
+      return False
+
+    param[0] = rv[0] if len(rv) > 0 else 0.0
+    param[1] = rv[1] if len(rv) > 1 else 0.0
+    param[2] = rv[2] if len(rv) > 2 else 0.0
+
+    return True
+
+
+class I2CDevice(object):
+
+  def __init__(self, xm, xt, xc, mname, xcprefix):
+
+    self._i2cdev = None
+
+    addr = xc.get_int(xcprefix + "_I2C_ADDR", 16, 0x00)
+
+    if addr > 0x00:
+
+      m = __import__(mname)
+
+      # assume module's main class name is uppercase equivalent of module name
+
+      self._i2cdev = getattr(m, m.__name__.upper())(xm, xt, addr)
+
+
+class I2CDisplay(Periodic, I2CDevice):
+
+  def __init__(self, xm, xt, xc, tick_period, mname, xcprefix):
+
+    I2CDevice.__init__(self, xm, xt, xc, mname, xcprefix)
+    Periodic.__init__(self, xc, tick_period, xcprefix)
+
+    if self._i2cdev != None:
+
+      self._xt = xt
+      self._mode = xc.get_int(xcprefix + "_MODE", 10, 0)
+      self._buf = [""] * (4 if self._mode > 0 else 2)
+
+      self._i2cdev.clear()
+
+
+  # param is (time, [ [ h1, t1, p1 ], [ h2, t2, p2 ] ])
+
+  def _fire(self, param):
+
+    if self._i2cdev == None:
+      return False
+
+    lt = self._xt.localtime(param[0] // 1000)
+    buf = [""] * (4 if self._mode > 0 else 2)
+    
+    if self._mode == 1:
+    
+      buf[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
+      buf[1] = "Humidity:     %5.1f%%" % (param[1][0][0])
+      buf[2] = "Temperature: %6.1fC" % (param[1][0][1])
+      buf[3] = "Pressure:  %6.1fhPa" % (param[1][0][2])
+    
+    if self._mode == 2:
+    
+      buf[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
+      buf[1] = " %5.1f%%     %5.1f%%" % (param[1][1][0], param[1][0][0])
+      buf[2] = "%6.1fC    %6.1fC" % (param[1][1][1], param[1][0][1])
+      buf[3] = "%6.1fhPa  %6.1fhPa" % (param[1][1][2], param[1][0][2])
+    
+    else:
+    
+      buf[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
+      buf[1] = "% 5.1fC %6.1fhPa" % (param[1][0][1], param[1][0][2])
+    
+    # update line 1 only if there is a change
+    
+    if self._buf[0] != buf[0]:
+      self._buf[0] = buf[0]
+      self._i2cdev.show(self._buf[0], 1)
+    
+    # update line 2 only if there is a change
+    
+    if self._buf[1] != buf[1]:
+      self._buf[1] = buf[1]
+      self._i2cdev.show(self._buf[1], 2)
+    
+    # update line 3 only if there is a change
+    
+    if self._mode > 0 and self._buf[2] != buf[2]:
+      self._buf[2] = buf[2]
+      self._i2cdev.show(self._buf[2], 3)
+    
+    # update line 4 only if there is a change
+    
+    if self._mode > 0 and self._buf[3] != buf[3]:
+      self._buf[3] = buf[3]
+      self._i2cdev.show(self._buf[3], 4)
+
+
+class I2CSensor(Sensor):
+
+  def __init__(self, xm, xt, xc, tick_period, mname, xcprefix):
+
+    Sensor.__init__(self, xc, tick_period, xcprefix)
+    I2CDevice.__init__(self, xm, xt, xc, mname, xcprefix)
+
+
+  def _get(self):
+
+    if self._i2cdev == None:
+      return None
+
+    return self._i2cdev.get()
+
+
+class RemoteSensor(Sensor):
+
+  _req_ptn = re.compile("^\s*([0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s*$")
+
+  def __init__(self, xt, xc, tick_period, xcprefix):
+
+    Sensor.__init__(self, xc, tick_period, xcprefix)
+
+    self._webclt = None
+
+    host = xc.get_str(xcprefix + "_HOST", "")
+    port = xc.get_int(xcprefix + "_PORT", 10, 0)
+    path = xc.get_str(xcprefix + "_PATH", "/")
+
+    if len(host) > 0 and port > 0 and port < 0xffff and len(path) > 0:
+
+      m = __import__("webclient")
+
+      self._webclt = m.HTTPRequest()
+      self._webclt.set(host, path, port)
+
+
+  def _get(self):
+
+    if self._webclt == None:
+      return None
+
+    rv = self._webclt.request()
+
+    # error
+
+    if rv[0] != 0:
+      self._webclt.reset()
+      return 0.0, 0.0, 0.0
+
+    # success, but not done yet
+
+    if rv[1] != 10:
+      return None
+
+    # success and done; get response
+
+    rv = self._webclt.get_response()
+    self._webclt.reset()
+
+    # anything other than 200 OK is an error
+
+    if rv[0][0] != 200:
+      return 0.0, 0.0, 0.0
+
+    # parse result
+
+    rv = RemoteSensor._req_ptn.match(rv[2])
+
+    # invalid result?
+
+    if rv == None:
+      return 0.0, 0.0, 0.0
+
+    return float(rv.group(2)), float(rv.group(3)), float(rv.group(4))
+
+
+class ModDevice(object):
+
+  def __init__(self, xm, xt, xc, tick_period, xcprefix):
+
+    self._device = None
+    module = xc.get_str(xcprefix + "_MODULE", "").lower()
+
+    if module == "http":
+      self._device = RemoteSensor(xm, xc, tick_period, xcprefix)
+    elif module in [ "bme280", "sht30" ]:
+      self._device = I2CSensor(xm, xt, xc, tick_period, module, xcprefix)
+    elif module in [ "hd44780" ]:
+      self._device = I2CDisplay(xm, xt, xc, tick_period, module, xcprefix)
+
+  def tick(self, param):
+
+    if self._device != None:
+      self._device.tick(param)
+
+
+class NTP(Periodic):
+
+  def __init__(self, xc, tick_period, xcprefix):
+
+    self._xmod = None
+    self._host = xc.get_str(xcprefix + "_HOST", "")
+
+    if len(self._host) > 0:
+      self._xmod = __import__("xntptime")
+
+    Periodic.__init__(self, xc, tick_period, xcprefix)
+
+
+  def _fire(self, param):
+
+    if self._xmod == None:
+      return False
+
+    self._xmod.update(self._host, 1)
+
+    return True
+
+
+class LED(object):
+
+  def __init__(self, xc, xcprefix):
+
+    self._dev = None
+    self._inv = False
+
+    pin = xc.get_str(xcprefix + "_PIN", "")
+
+    if len(pin) > 0:
+
+      try:
+        pin = int(pin)
+      except:
+        pass
+
+      m = __import__("machine")
+      self._dev = m.Pin(pin, mode=m.Pin.OUT)
+      self._inv = xc.get_bool(xcprefix + "_INVERT", False)
+
+      self._dev.value(1 if self._inv else 0)
+
+
+  def set(self, state):
+
+    # i  s  i xor s
+    # 0  0  0
+    # 0  1  1
+    # 1  0  1
+    # 1  1  0
+
+    if self._dev != 0:
+      self._dev.value(self._inv ^ state)
+
+
+class WS():
+
+  def __init__(self, xc, xcprefix):
+
+    self._websrv = None
+    self._path = xc.get_str(xcprefix + "_PATH", "/")
+
+    port = xc.get_int(xcprefix + "_PORT", 10, 0)
+
+    if port > 0 and port < 0xffff and len(self._path) > 0:
+
+      m = __import__("webserver")
+      self._websrv = m.Webserver(xt, port=port, timeout=xc.get_int(xcprefix + "_TIMEOUT", 10, 60))
+
+      self._websrv.start()
+
+
+  def serve(self, htp, now):
+
+    if self._websrv != None:
+      self._websrv.serve(
+        {
+          self._path: "%16d %7.3f %7.3f %8.3f\r\n" % ((now // 1000) + 946684800, htp[0][0], htp[0][1], htp[0][2])
+        },
+        now
+      )
 
 
 # connect to wifi
@@ -36,102 +357,31 @@ xm = xmachine.XMachine(bus=xc.get_int("I2C_BUS"), sda=xc.get_int("I2C_PIN_SDA"),
 
 tick_period = xc.get_int("TICK_PERIOD", 10, 1000)
 
-# init display
+# init devices
 
-dsply_dev = None
-
-if xc.get_int("DISPLAY_I2C_ADDR", 16, 0x00) > 0x00:
-
-  dsply_dev = hd44780.HD44780(xm, xt, addr=xc.get_int("DISPLAY_I2C_ADDR", 16))
-  dsply_interval = int(xc.get_int("DISPLAY_INTERVAL", 10, 5) * (1000 / tick_period)) - 1
-  dsply_count = dsply_interval - 2
-  dsply_mode = xc.get_int("DISPLAY_MODE", 10, 0)
-  dsply_lbuf_cur = [""] * (4 if dsply_mode > 0 else 2)
-  dsply_lbuf_new = [""] * (4 if dsply_mode > 0 else 2)
-
-  dsply_dev.clear()
-
-  print("Display initialised; i2c_addr=0x%0X; mode=%d" % (xc.get_int("DISPLAY_I2C_ADDR", 16), dsply_mode))
-
-# init sensor
-
-snsr1_dev = None
-
-if xc.get_int("SENSOR_I2C_ADDR", 16, 0x00) > 0x00:
-
-  snsr1_dev = bme280.BME280(xm, xt, addr=xc.get_int("SENSOR_I2C_ADDR", 16))
-  snsr1_interval = xc.get_int("SENSOR_INTERVAL", 10, 5) * (1000 / tick_period) - 1
-  snsr1_count = snsr1_interval - 1
-
-  print("Sensor1 initialised; i2c_addr=0x%0X" % (xc.get_int("SENSOR_I2C_ADDR", 16)))
-
-# init led
-
-led_dev = None
-
-if len(xc.get_str("LED_PIN", "")) > 0:
-
-  pin = None
-
-  try:
-    pin = int(xc.get_str("LED_PIN"))
-  except:
-    pin = xc.get_str("LED_PIN")
-
-  led_dev = machine.Pin(pin, mode=machine.Pin.OUT, value=0)
-  led_invert = xc.get_bool("LED_FLAG_INVERT")
-
-  print("LED initialised; pin=%s" % (str(pin)))
+sensor1 = ModDevice(xm, xt, xc, tick_period, "SENSOR1")
+sensor2 = ModDevice(xm, xt, xc, tick_period, "SENSOR2")
+display = ModDevice(xm, xt, xc, tick_period, "DISPLAY")
 
 # init webserver
 
-websrv = None
+websrv = WS(xc, "WEBSRV")
 
-if xc.get_int("WEBSRV_PORT", 10, 0) > 0 and len(xc.get_str("WEBSRV_PATH")) > 0:
+# init ntp sync
 
-  websrv = webserver.Webserver(xt, port=xc.get_int("WEBSRV_PORT"), timeout=xc.get_int("WEBSRV_TIMEOUT", 10, 60))
-  websrv_path = xc.get_str("WEBSRV_PATH", "/")
+ntp = NTP(xc, tick_period, "NTP")
 
-  websrv.start()
+# init led
 
-  print("Webserver initialised; port=%d; path=%s" % (xc.get_int("WEBSRV_PORT", 10), websrv_path))
-
-# init webclient
-
-webclt = None
-
-if len(xc.get_str("REMOTE_HOST", "")) > 0:
-
-  webclt = webclient.HTTPRequest()
-  webclt_interval = xc.get_int("REMOTE_INTERVAL", 10, 5) * (1000 / tick_period) - 1
-  webclt_count = webclt_interval - 3
-
-  webclt.set(xc.get_str("REMOTE_HOST"), xc.get_str("REMOTE_PATH", "/"))
-
-  print("Webclient initialised; host=%s; path=%s" % (xc.get_str("REMOTE_HOST"), xc.get_str("REMOTE_PATH", "/")))
-
-# init NTP
-
-ntp_host = xc.get_str("NTP_HOST", "")
-
-if len(ntp_host) > 0:
-
-  ntp_interval = xc.get_int("NTP_INTERVAL", 10, 300) * (1000 / tick_period) - 1
-  ntp_count = ntp_interval
-
-  print("NTP sync initialised; host=%s" % (ntp_host))
-
-print("Starting...")
-
-# init global variables
-
-humi = [ 0.0 ] * 2
-temp = [ 0.0 ] * 2
-pres = [ 0.0 ] * 2
+led = LED(xc, "LED")
 
 # we don't need this anymore
 
 del xc
+
+# init global variables
+
+htp = [ [ 0.0 ] * 3 ] + [ [ 0.0 ] * 3 ]
 
 # align loop to the nearest clock second
 
@@ -145,122 +395,26 @@ while True:
 
   # LED on
 
-  if led_dev != None:
-    led_dev.value(0 if led_invert else 1)
+  led.set(True)
 
-  if dsply_dev != None:
+  # run periodic stuff
 
-    if dsply_count >= dsply_interval:
-      dsply_count = 0
+  display.tick((t_start, htp))
 
-      # compose strings
-  
-      lt = xt.localtime(t_start // 1000)
-
-      if dsply_mode == 1:
-
-        dsply_lbuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-        dsply_lbuf_new[1] = "Humidity:     %5.1f%%" % (humi[0])
-        dsply_lbuf_new[2] = "Temperature: %6.1fC" % (temp[0])
-        dsply_lbuf_new[3] = "Pressure:  %6.1fhPa" % (pres[0])
-
-      if dsply_mode == 2:
-
-        dsply_lbuf_new[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-        dsply_lbuf_new[1] = " %5.1f%%     %5.1f%%" % (humi[1], humi[0])
-        dsply_lbuf_new[2] = "%6.1fC    %6.1fC" % (temp[1], temp[0])
-        dsply_lbuf_new[3] = "%6.1fhPa  %6.1fhPa" % (pres[1], pres[0])
-
-      else:
-
-        dsply_lbuf_new[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
-        dsply_lbuf_new[1] = "% 5.1fC %6.1fhPa" % (temp[0], pres[0])
-  
-      # update line 1 only if there is a change
-  
-      if dsply_lbuf_cur[0] != dsply_lbuf_new[0]:
-        dsply_lbuf_cur[0] = dsply_lbuf_new[0]
-        dsply_dev.show(dsply_lbuf_cur[0], 1)
-  
-      # update line 2 only if there is a change
-  
-      if dsply_lbuf_cur[1] != dsply_lbuf_new[1]:
-        dsply_lbuf_cur[1] = dsply_lbuf_new[1]
-        dsply_dev.show(dsply_lbuf_cur[1], 2)
-  
-      # update line 3 only if there is a change
-  
-      if dsply_mode > 0 and dsply_lbuf_cur[2] != dsply_lbuf_new[2]:
-        dsply_lbuf_cur[2] = dsply_lbuf_new[2]
-        dsply_dev.show(dsply_lbuf_cur[2], 3)
-  
-      # update line 4 only if there is a change
-  
-      if dsply_mode > 0 and dsply_lbuf_cur[3] != dsply_lbuf_new[3]:
-        dsply_lbuf_cur[3] = dsply_lbuf_new[3]
-        dsply_dev.show(dsply_lbuf_cur[3], 4)
-
-    else:
-
-      dsply_count = dsply_count + 1
-
-  # do sensor probe at the specified interval
-
-  if snsr1_dev != None:
-    if snsr1_count >= snsr1_interval:
-      snsr1_count = 0
-  
-      humi[0], temp[0], pres[0] = snsr1_dev.get()
-    else:
-      snsr1_count = snsr1_count + 1
-
-  # do web requests at the specified interval
-
-  if webclt != None:
-    if webclt_count >= webclt_interval:
-
-      rsp = webclt.request()
-
-      if rsp[0] == 0 and rsp[1] == 10:
-        webclt_count = 0
-
-        rsp = webclt.get_response()
-
-        if rsp[0][0] == 200:
-
-          mo = re.match("^\s*([0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)\s*$", rsp[2])
-
-          if mo != None:
-            humi[1] = float(mo.group(2))
-            temp[1] = float(mo.group(3))
-            pres[1] = float(mo.group(4))
-
-        webclt.reset()
-      elif rsp[0] != 0:
-        webclt_count = 0
-        webclt.reset()
-    else:
-      webclt_count = webclt_count + 1
-
-  # do time sync at the specified interval
-
-  if len(ntp_host) > 0:
-    if ntp_count >= ntp_interval:
-      ntp_count = 0
-      xntptime.update(ntp_host, 1)
-    else:
-      ntp_count = ntp_count + 1
+  sensor1.tick(htp[0])
+  sensor2.tick(htp[1])
 
   # serve any pending webserver requests
 
-  if websrv != None:
-    trmap = { websrv_path: "%16d %7.3f %7.3f %8.3f\r\n" % ((t_start // 1000) + 946684800, humi[0], temp[0], pres[0]) }
-    websrv.serve(reqmap=trmap, now=t_start)
+  websrv.serve(htp, t_start)
+
+  # sync time
+
+  ntp.tick(None)
 
   # LED off
 
-  if led_dev != None:
-    led_dev.value(1 if led_invert else 0)
+  led.set(False)
 
   # sleep until the end of the second
 

@@ -1,3 +1,25 @@
+2022-09-03  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Factored out duplicated code into a lot of class hierarchies. New
+	    code is too big to run on an ESP8266, but will fix that soon.
+
+	* conf/clock_sensor/clock_sensor_esp32.conf
+	* conf/clock_sensor/clock_sensor_esp8266.conf
+	* conf/clock_sensor/clock_sensor_picow.conf
+
+	  - Added: DISPLAY_MODULE
+	  - Added: SENSOR1_MODULE
+	  - Renamed: SENSOR_I2C_ADDR to SENSOR[12]_I2C_ADDR
+	  - Renamed: SENSOR_INTERVAL to SENSOR[12]_INTERVAL
+	  - Renamed: LED_FLAG_INVERT to LED_INVERT
+	  - Renamed: REMOTE_HOST to SENSOR[12]_HOST
+	  - Renamed: REMOTE_PORT to SENSOR[12]_PORT
+	  - Renamed: REMOTE_PATH to SENSOR[12]_PATH
+	  - Renamed: REMOTE_INTERVAL to SENSOR[12]_INTERVAL
+
+
 2022-08-29  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
