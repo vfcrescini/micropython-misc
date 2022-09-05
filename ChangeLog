@@ -2,6 +2,27 @@
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
+	  - Webserver text is now defined by the WEBSRV_TEMPLATE config param.
+
+	    Template variables:
+
+	    - %TS%: seconds since epoch, XXXXXXXXXX
+	    - %Sn_HUMI%: sensor n humidity, XXX.XXX
+	    - %Sn_TEMP%: sensor n temperature, +XX.XXX
+	    - %Sn_PRES%: sensor n pressure, XXXX.XXX
+
+
+	* conf/clock_sensor/clock_sensor_esp32.conf:
+	* conf/clock_sensor/clock_sensor_esp8266.conf:
+	* conf/clock_sensor/clock_sensor_picow.conf:
+
+	  - Added: WEBSRV_TEMPLATE
+
+
+2022-09-06  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
 	  - Display lines are now defined by the DISPLAY_TEMPLATE config param.
 	    Lines are colon separated.
 

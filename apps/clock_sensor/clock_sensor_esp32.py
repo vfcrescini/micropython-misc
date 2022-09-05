@@ -315,6 +315,7 @@ class WS():
 
     self._websrv = None
     self._path = xc.get_str(xcprefix + "_PATH", "/")
+    self._template = xc.get_str(xcprefix + "_TEMPLATE", "")
 
     port = xc.get_int(xcprefix + "_PORT", 10, 0)
 
@@ -326,12 +327,26 @@ class WS():
       self._websrv.start()
 
 
-  def serve(self, htp, now):
+  def _compose(self, now, s1, s2):
+
+    tmp = self._template
+    tmp = tmp.replace("%TS%", "%16d" % ((now // 1000) + xtime._EPOCH_OFFSET))
+    tmp = tmp.replace("%S1_HUMI%", "%7.3f" % (s1[0]))
+    tmp = tmp.replace("%S1_TEMP%", "%7.3f" % (s1[1]))
+    tmp = tmp.replace("%S1_PRES%", "%8.3f" % (s1[2]))
+    tmp = tmp.replace("%S2_HUMI%", "%7.3f" % (s2[0]))
+    tmp = tmp.replace("%S2_TEMP%", "%7.3f" % (s2[1]))
+    tmp = tmp.replace("%S2_PRES%", "%8.3f" % (s2[2]))
+
+    return tmp
+
+
+  def serve(self, now, htp):
 
     if self._websrv != None:
       self._websrv.serve(
         {
-          self._path: "%16d %7.3f %7.3f %8.3f\r\n" % ((now // 1000) + 946684800, htp[0][0], htp[0][1], htp[0][2])
+          self._path: self._compose(now, htp[0], htp[1]) + "\r\n"
         },
         now
       )
@@ -398,7 +413,7 @@ while True:
 
   # serve any pending webserver requests
 
-  websrv.serve(htp, t_start)
+  websrv.serve(t_start, htp)
 
   # sync time
 
