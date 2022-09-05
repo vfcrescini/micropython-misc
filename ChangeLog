@@ -1,3 +1,29 @@
+2022-09-06  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Display lines are now defined by the DISPLAY_TEMPLATE config param.
+	    Lines are colon separated.
+
+	    Template variables:
+
+	      - %LDATE%: long date, DD/MM/YYYY
+	      - %SDATE%: short date, DD/MM/YY
+	      - %TIME%: time, HH:MM:SS
+	      - %Sn_HUMI%: sensor n humidity, XXX.X%
+	      - %Sn_TEMP%: sensor n temperature, +XX.XC
+	      - %Sn_PRES%: sensor n pressure, XXXX.XhPa
+	      - %NBSP%: space
+	      - %COLON%: colon
+
+	* conf/clock_sensor/clock_sensor_esp32.conf:
+	* conf/clock_sensor/clock_sensor_esp8266.conf:
+	* conf/clock_sensor/clock_sensor_picow.conf:
+
+	  - Removed: DISPLAY_MODE
+	  - Added: DISPLAY_TEMPLATE
+
+
 2022-09-03  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:

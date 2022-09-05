@@ -101,10 +101,41 @@ class I2CDisplay(Periodic, I2CDevice):
     if self._i2cdev != None:
 
       self._xt = xt
-      self._mode = xc.get_int(xcprefix + "_MODE", 10, 0)
-      self._buf = [""] * (4 if self._mode > 0 else 2)
+
+      tmp = xc.get_str(xcprefix + "_TEMPLATE", "").split(":")
+
+      self._buffer = [""] * len(tmp)
+      self._template = list(map(lambda x: x.replace("%NBSP%", " ",).replace("%COLON%", ":"), tmp))
 
       self._i2cdev.clear()
+
+
+  # refreshes buffer; returns an array of bools representing lines in buffer
+  # that were actually modified
+
+  def _refresh(self, now, s1, s2):
+
+    lt = self._xt.localtime(now // 1000)
+    chg = [ False ] * len(self._buffer)
+
+    for i, line in enumerate(self._template):
+
+      tmp = line
+      tmp = tmp.replace("%SDATE%", "%02d/%02d" % (lt[2], lt[1]))
+      tmp = tmp.replace("%LDATE%", "%02d/%02d/%04d" % (lt[2], lt[1], lt[0]))
+      tmp = tmp.replace("%TIME%", "%02d:%02d:%02d" % (lt[3], lt[4], lt[5]))
+      tmp = tmp.replace("%S1_HUMI%", "%5.1f%%" % (s1[0]))
+      tmp = tmp.replace("%S1_TEMP%", "%5.1fC" % (s1[1]))
+      tmp = tmp.replace("%S1_PRES%", "%6.1fhPa" % (s1[2]))
+      tmp = tmp.replace("%S2_HUMI%", "%5.1f%%" % (s2[0]))
+      tmp = tmp.replace("%S2_TEMP%", "%5.1fC" % (s2[1]))
+      tmp = tmp.replace("%S2_PRES%", "%6.1fhPa" % (s2[2]))
+
+      if self._buffer[i] != tmp:
+        self._buffer[i] = tmp
+        chg[i] = True
+
+    return chg
 
 
   # param is (time, [ [ h1, t1, p1 ], [ h2, t2, p2 ] ])
@@ -114,51 +145,12 @@ class I2CDisplay(Periodic, I2CDevice):
     if self._i2cdev == None:
       return False
 
-    lt = self._xt.localtime(param[0] // 1000)
-    buf = [""] * (4 if self._mode > 0 else 2)
-    
-    if self._mode == 1:
-    
-      buf[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-      buf[1] = "Humidity:     %5.1f%%" % (param[1][0][0])
-      buf[2] = "Temperature: %6.1fC" % (param[1][0][1])
-      buf[3] = "Pressure:  %6.1fhPa" % (param[1][0][2])
-    
-    if self._mode == 2:
-    
-      buf[0] = "%02d/%02d/%04d  %02d:%02d:%02d" % (lt[2], lt[1], lt[0], lt[3], lt[4], lt[5])
-      buf[1] = " %5.1f%%     %5.1f%%" % (param[1][1][0], param[1][0][0])
-      buf[2] = "%6.1fC    %6.1fC" % (param[1][1][1], param[1][0][1])
-      buf[3] = "%6.1fhPa  %6.1fhPa" % (param[1][1][2], param[1][0][2])
-    
-    else:
-    
-      buf[0] = "%02d/%02d   %02d:%02d:%02d" % (lt[2], lt[1], lt[3], lt[4], lt[5])
-      buf[1] = "% 5.1fC %6.1fhPa" % (param[1][0][1], param[1][0][2])
-    
-    # update line 1 only if there is a change
-    
-    if self._buf[0] != buf[0]:
-      self._buf[0] = buf[0]
-      self._i2cdev.show(self._buf[0], 1)
-    
-    # update line 2 only if there is a change
-    
-    if self._buf[1] != buf[1]:
-      self._buf[1] = buf[1]
-      self._i2cdev.show(self._buf[1], 2)
-    
-    # update line 3 only if there is a change
-    
-    if self._mode > 0 and self._buf[2] != buf[2]:
-      self._buf[2] = buf[2]
-      self._i2cdev.show(self._buf[2], 3)
-    
-    # update line 4 only if there is a change
-    
-    if self._mode > 0 and self._buf[3] != buf[3]:
-      self._buf[3] = buf[3]
-      self._i2cdev.show(self._buf[3], 4)
+    # send to the display only lines that acutally changed
+
+    for i, _ in filter(lambda x: x[1], enumerate(self._refresh(param[0], param[1][0], param[1][1]))):
+      self._i2cdev.show(self._buffer[i], i + 1)
+
+    return True
 
 
 class I2CSensor(Sensor):
