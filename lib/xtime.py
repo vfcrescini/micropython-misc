@@ -306,7 +306,7 @@ class _XTimeMicroPython(object):
     if self._tz_expiry <= ssecs:
       self._update(ssecs)
 
-    return _time.localtime(ssecs + _EPOCH_OFFSET)[:8]
+    return _time.localtime(ssecs + _EPOCH_OFFSET + self._tz_offset)[:8]
 
 
   def mktime(self, ttuple):
