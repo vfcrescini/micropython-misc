@@ -1,3 +1,16 @@
+2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/xtime.py:
+
+	  - Time operations on rp2 platforms are now offset correctly to
+	    embedded epoch (2000/01/01).
+
+	  - New module constant: EPOCH_OFFSET.
+
+	  - Tidy up to ensure everything works on ports that use unix
+	    epoch and on ports that use embedded epoch.
+
+
 2022-09-06  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
@@ -10,7 +23,6 @@
 	    - %Sn_HUMI%: sensor n humidity, XXX.XXX
 	    - %Sn_TEMP%: sensor n temperature, +XX.XXX
 	    - %Sn_PRES%: sensor n pressure, XXXX.XXX
-
 
 	* conf/clock_sensor/clock_sensor_esp32.conf:
 	* conf/clock_sensor/clock_sensor_esp8266.conf:

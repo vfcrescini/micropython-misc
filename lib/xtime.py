@@ -14,11 +14,11 @@ import sys as _sys
 import time as _time
 import re as _re
 
+
+EPOCH_OFFSET = 946684800
+
 _DEFAULT_TZ_FILE_PATH = "tzdata.txt"
-
-_LINUX = _sys.platform.lower().startswith("linux")
-
-_EPOCH_OFFSET = 946684800
+_EPOCH_OFFSET = EPOCH_OFFSET if _sys.platform.lower().startswith("linux") or _sys.platform.lower().startswith("rp2") else 0
 
 
 class XTime(object):
@@ -47,6 +47,7 @@ class XTime(object):
 
 
   def __init__(self, *args, **kwargs):
+
     pass
 
 
@@ -277,12 +278,7 @@ class _XTimeMicroPython(object):
 
   def time_ns(self):
 
-    t = _time.time_ns()
-
-    if _LINUX:
-      t = t - (_EPOCH_OFFSET * 1000000000)
-
-    return t
+    return _time.time_ns() - (_EPOCH_OFFSET * 1000000000)
 
 
   def time_us(self):
@@ -297,12 +293,7 @@ class _XTimeMicroPython(object):
 
   def time_ss(self):
 
-    t = int(_time.time())
-
-    if _LINUX:
-      t = t - _EPOCH_OFFSET
-
-    return t
+    return int(_time.time()) - _EPOCH_OFFSET
 
 
   def localtime(self, ssecs=None):
@@ -315,24 +306,12 @@ class _XTimeMicroPython(object):
     if self._tz_expiry <= ssecs:
       self._update(ssecs)
 
-    if _LINUX:
-      ssecs = ssecs + _EPOCH_OFFSET
-
-    t = _time.gmtime(ssecs + self._tz_offset)
-
-    return t[:8]
+    return _time.localtime(ssecs + _EPOCH_OFFSET)[:8]
 
 
   def mktime(self, ttuple):
 
-    t = 0
-
-    if _LINUX:
-      t = _time.mktime(ttuple + (-1,)) - _EPOCH_OFFSET
-    else:
-      t = _time.mktime(ttuple)
-
-    return t
+    return _time.mktime(ttuple) - _EPOCH_OFFSET
 
 
   def gmtime(self, ssecs=None):
@@ -340,9 +319,4 @@ class _XTimeMicroPython(object):
     if ssecs == None:
       ssecs = self.time_ss()
 
-    if _LINUX:
-      ssecs = ssecs + _EPOCH_OFFSET
-
-    t = _time.gmtime(ssecs)
-
-    return t[:8]
+    return _time.gmtime(ssecs + _EPOCH_OFFSET)[:8]
