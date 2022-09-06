@@ -1,5 +1,14 @@
 2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Now uses time.ticks_*() functions instead of time.time_ns()
+	    because on some ports (rp2 in particular), time.time_ns()
+	    is rounded off to the nearest second.
+
+
+2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
 	* lib/xtime.py:
 
 	  - Time operations on rp2 platforms are now offset correctly to

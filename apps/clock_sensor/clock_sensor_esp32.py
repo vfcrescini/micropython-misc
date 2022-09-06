@@ -7,6 +7,7 @@
 # clock weather sensor webserver for ESP32/ESP8266
 
 
+import time
 import xtime
 import xmachine
 import xconfig
@@ -330,7 +331,7 @@ class WS():
   def _compose(self, now, s1, s2):
 
     tmp = self._template
-    tmp = tmp.replace("%TS%", "%16d" % ((now // 1000) + xtime._EPOCH_OFFSET))
+    tmp = tmp.replace("%TS%", "%16d" % ((now // 1000) + xtime.EPOCH_OFFSET))
     tmp = tmp.replace("%S1_HUMI%", "%7.3f" % (s1[0]))
     tmp = tmp.replace("%S1_TEMP%", "%7.3f" % (s1[1]))
     tmp = tmp.replace("%S1_PRES%", "%8.3f" % (s1[2]))
@@ -390,15 +391,12 @@ del xc
 
 htp = [ [ 0.0 ] * 3 ] + [ [ 0.0 ] * 3 ]
 
-# align loop to the nearest clock second
-
-xt.sleep_ms(1000 - (xt.time_ms() % 1000))
-
 # start main loop
 
 while True:
 
-  t_start = xt.time_ms()
+  t_start = time.ticks_ms()
+  t_now = xt.time_ms()
 
   # LED on
 
@@ -406,14 +404,14 @@ while True:
 
   # run periodic stuff
 
-  display.tick((t_start, htp))
+  display.tick((t_now, htp))
 
   sensor1.tick(htp[0])
   sensor2.tick(htp[1])
 
   # serve any pending webserver requests
 
-  websrv.serve(t_start, htp)
+  websrv.serve(t_now, htp)
 
   # sync time
 
@@ -423,9 +421,9 @@ while True:
 
   led.set(False)
 
-  # sleep until the end of the second
+  # sleep until the end of the tick period
 
-  t_end = xt.time_ms()
+  t_diff = time.ticks_diff(time.ticks_ms(), t_start)
 
-  if (t_end - t_start) < tick_period:
-    xt.sleep_ms(tick_period - (t_end % tick_period))
+  if t_diff < tick_period:
+    xt.sleep_ms(tick_period - t_diff)
