@@ -301,12 +301,19 @@ class _XTimeMicroPython(object):
     if ssecs == None:
       ssecs = self.time_ss()
 
+    offset = _EPOCH_OFFSET
+
+    # on ports that have a fake localtime(), use our own tz offset
     # if the current tzdata offset is expired, try to update it
 
-    if self._tz_expiry <= ssecs:
-      self._update(ssecs)
+    if _time.gmtime == _time.localtime:
 
-    return _time.localtime(ssecs + _EPOCH_OFFSET + self._tz_offset)[:8]
+      if self._tz_expiry <= ssecs:
+        self._update(ssecs)
+
+      offset = offset + self._tz_offset
+
+    return _time.localtime(ssecs + offset)[:8]
 
 
   def mktime(self, ttuple):

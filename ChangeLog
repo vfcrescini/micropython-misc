@@ -1,5 +1,14 @@
 2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* lib/xtime.py:
+
+	  - Some micropython ports have a fake time.localtime() function that
+	    just calls time.gmtime(), some don't. Apply our own TZ data offset
+	    implementation only on those that don't.
+
+
+2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
 	  - Now uses time.ticks_*() functions instead of time.time_ns()
