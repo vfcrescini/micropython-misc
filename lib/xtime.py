@@ -23,7 +23,6 @@ _EPOCH_OFFSET = EPOCH_OFFSET if _sys.platform.lower().startswith("linux") or _sy
 
 class XTime(object):
 
-
   def __new__(cls, *args, **kwargs):
 
     xt = None
@@ -49,61 +48,6 @@ class XTime(object):
   def __init__(self, *args, **kwargs):
 
     pass
-
-
-  def sleep_ns(self, nsecs):
-
-    raise NotImplementedError
-
-
-  def sleep_us(self, usecs):
-
-    raise NotImplementedError
-
-
-  def sleep_ms(self, msecs):
-
-    raise NotImplementedError
-
-
-  def sleep_ss(self, ssecs):
-
-    raise NotImplementedError
-
-
-  def time_ns(self):
-
-    raise NotImplementedError
-
-
-  def time_us(self):
-
-    raise NotImplementedError
-
-
-  def time_ms(self):
-
-    raise NotImplementedError
-
-
-  def time_ss(self):
-
-    raise NotImplementedError
-
-
-  def localtime(self, ssecs=None):
-
-    raise NotImplementedError
-
-
-  def mktime(self, ttuple):
-
-    raise NotImplementedError
-
-
-  def gmtime(self, ssecs=None):
-
-    raise NotImplementedError
 
 
 class _XTimeCPython(object):
@@ -178,11 +122,19 @@ class _XTimeCPython(object):
     return t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_wday, t.tm_yday
 
 
+  def tp_now(self):
+
+    return int(_time.time() * 1000)
+
+
+  def tp_diff(self, tp1, tp2):
+
+    return tp1 - tp2
+
+
 class _XTimeMicroPython(object):
 
-
   _tz_line_pattern = _re.compile("^\s*([0-9]+)\s+([+-]?[0-9]+)\s*$")
-
 
   def __init__(self, tz_path=_DEFAULT_TZ_FILE_PATH):
 
@@ -327,3 +279,13 @@ class _XTimeMicroPython(object):
       ssecs = self.time_ss()
 
     return _time.gmtime(ssecs + _EPOCH_OFFSET)[:8]
+
+
+  def tp_now(self):
+
+    return _time.ticks_ms()
+
+
+  def tp_diff(self, tp1, tp2):
+
+    return _time.ticks_diff(tp1, tp2)

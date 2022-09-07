@@ -7,7 +7,6 @@
 # clock weather sensor webserver for ESP32/ESP8266
 
 
-import time
 import xtime
 import xmachine
 import xconfig
@@ -395,7 +394,7 @@ htp = [ [ 0.0 ] * 3 ] + [ [ 0.0 ] * 3 ]
 
 while True:
 
-  t_start = time.ticks_ms()
+  t_start = xt.tp_now()
   t_now = xt.time_ms()
 
   # LED on
@@ -423,7 +422,7 @@ while True:
 
   # sleep until the end of the tick period
 
-  t_diff = time.ticks_diff(time.ticks_ms(), t_start)
+  t_diff = xt.tp_diff(xt.tp_now(), t_start)
 
   if t_diff < tick_period:
     xt.sleep_ms(tick_period - t_diff)

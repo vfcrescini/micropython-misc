@@ -1,3 +1,19 @@
+2022-09-08  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/xtime.py:
+
+	  - Added convenience wrapper functions for taking and comparing time
+	    points:
+
+	      - xtime.tp_now(): retuns a time point with ms resolution
+	      - xtime.tp_diff(): returns difference in ms between two time
+	        points.
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Use new xtime time point functions.
+
+
 2022-09-07  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/xtime.py:
