@@ -10,30 +10,23 @@
 
 class XConfig:
 
-  # path, if given, path to config file
-  # config, if given, a dict that contains the initial config params
+  # path: path to config file
 
-  def __init__(self, path=None, config=None):
+  def __init__(self, path="config.conf"):
 
-    self._config = {}
-
-    if config != None and isinstance(config, dict):
-      self._config = config
-
-    if path !=None:
-      self.load(path)
+    self._path = path
+    self._config = None
 
 
-  # parses given config file
-  #   path: the path to the config file
-  #   returns: True on success, False otherwise
+  # parses self._path, calls fn(name, value, param) for each parsed n-v pair.
+  # stops at EOF, or when fn() returns False
 
-  def load(self, path="config.conf"):
+  def _parse(self, fn, param):
 
     f = None
 
     try:
-      f = open(path, "r")
+      f = open(self._path, "r")
     except Exception as e:
       return False
 
@@ -49,14 +42,58 @@ class XConfig:
       if len(name) == 0:
         continue
 
-      self._config[name] = value
+      if not fn(name, value, param):
+        break
 
-    try:
-      f.close()
-    except:
-      pass
+    f.close()
 
     return True
+
+
+  def _get(self, name):
+
+    # param: name, [result]
+
+    def _fn_find(name, value, param):
+      if name != param[0]:
+        return True
+      param[1][0] = value
+      return False
+
+    # we have a loaded dict
+
+    if self._config != None:
+
+      if name not in self._config:
+        return None
+
+      return self._config[name]
+
+    # need to parse
+
+    res = [ None ]
+    self._parse(_fn_find, (name, res))
+
+    return res[0]
+
+
+  # parses given config file
+  #   preload: if given, a dict that contains the initial config params
+  #   returns: True on success, False otherwise
+
+  def load(self, preload=None):
+
+    def _fn_store(name, value, param):
+      param[name] = value
+      return True
+
+    if self._config == None:
+      self._config = {}
+
+    if preload != None and isinstance(preload, dict):
+      self._config.update(preload)
+
+    return self._parse(_fn_store, self._config)
 
 
   # attempt to retrieve a string config param
@@ -65,14 +102,12 @@ class XConfig:
 
   def get_str(self, name, default=""):
 
-    value = default
+    value = self._get(name)
 
-    try:
-      value = self._config[name]
-    except:
-      pass
+    if value == None:
+      return default
 
-    return value
+    return str(value)
 
 
   # attempt to retrieve an int config param as an int of the given base
@@ -85,7 +120,7 @@ class XConfig:
     value = default
 
     try:
-      value = int(self._config[name], base)
+      value = int(self._get(name), base)
     except:
       pass
 
@@ -101,7 +136,7 @@ class XConfig:
     value = default
 
     try:
-      value = self._config[name].lower() in ["true", "yes", "y"]
+      value = self._get(name).lower() in ["true", "yes", "y"]
     except:
       pass
 

@@ -1,3 +1,12 @@
+2022-09-09  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/xconfig.py:
+
+	  - Module will no longer automatically parse and load config into
+	    internal dict. There is now an option to parse config on demand
+	    to sacrifice efficiency for smaller mem footprint.
+
+
 2022-09-08  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/xtime.py:

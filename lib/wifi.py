@@ -20,9 +20,9 @@ import xconfig
 
 def _get_cred(path, verbose):
 
-  xc = xconfig.XConfig()
+  xc = xconfig.XConfig(path)
 
-  if not xc.load(path):
+  if not xc.load():
 
     if verbose:
       print("[wifi] unable load %s" % (path))
