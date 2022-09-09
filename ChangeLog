@@ -1,3 +1,11 @@
+2022-09-10  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - WS() will now only do string replacements for variables that are
+	    actually referenced by the configured template.
+
+
 2022-09-09  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* lib/xconfig.py:

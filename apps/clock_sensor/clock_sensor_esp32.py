@@ -317,39 +317,47 @@ class WS():
     self._path = xc.get_str(xcprefix + "_PATH", "/")
     self._template = xc.get_str(xcprefix + "_TEMPLATE", "")
 
+    self._vmap = [
+      [0, "%TS%", "%16d", False],
+      [0.0, "%S1_HUMI%", "%7.3f", False],
+      [0.0, "%S1_TEMP%", "%7.3f", False],
+      [0.0, "%S1_PRES%", "%8.3f", False],
+      [0.0, "%S2_HUMI%", "%7.3f", False],
+      [0.0, "%S2_TEMP%", "%7.3f", False],
+      [0.0, "%S2_PRES%", "%8.3f", False]
+    ]
+
+    for i in self._vmap:
+      i[3] = self._template.find(i[1]) >= 0
+
     port = xc.get_int(xcprefix + "_PORT", 10, 0)
+    to = xc.get_int(xcprefix + "_TIMEOUT", 10, 60)
 
     if port > 0 and port < 0xffff and len(self._path) > 0:
 
       m = __import__("webserver")
-      self._websrv = m.Webserver(xt, port=port, timeout=xc.get_int(xcprefix + "_TIMEOUT", 10, 60))
+      self._websrv = m.Webserver(xt, port=port, timeout=to)
 
       self._websrv.start()
 
 
-  def _compose(self, now, s1, s2):
-
-    tmp = self._template
-    tmp = tmp.replace("%TS%", "%16d" % ((now // 1000) + xtime.EPOCH_OFFSET))
-    tmp = tmp.replace("%S1_HUMI%", "%7.3f" % (s1[0]))
-    tmp = tmp.replace("%S1_TEMP%", "%7.3f" % (s1[1]))
-    tmp = tmp.replace("%S1_PRES%", "%8.3f" % (s1[2]))
-    tmp = tmp.replace("%S2_HUMI%", "%7.3f" % (s2[0]))
-    tmp = tmp.replace("%S2_TEMP%", "%7.3f" % (s2[1]))
-    tmp = tmp.replace("%S2_PRES%", "%8.3f" % (s2[2]))
-
-    return tmp
-
-
   def serve(self, now, htp):
 
-    if self._websrv != None:
-      self._websrv.serve(
-        {
-          self._path: self._compose(now, htp[0], htp[1]) + "\r\n"
-        },
-        now
-      )
+    if self._websrv == None:
+      return
+
+    self._vmap[0][0] = (now // 1000) + xtime.EPOCH_OFFSET
+
+    for i in range(0,3):
+      self._vmap[i + 1][0] = htp[0][i]
+      self._vmap[i + 4][0] = htp[1][i]
+
+    tmp = self._template
+
+    for i in filter(lambda x: x[3], self._vmap):
+      tmp = tmp.replace(i[1], i[2] % (i[0],))
+
+    self._websrv.serve( { self._path: tmp + "\r\n" }, now)
 
 
 # connect to wifi
