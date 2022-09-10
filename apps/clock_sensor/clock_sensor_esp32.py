@@ -153,6 +153,10 @@ class I2CDisplay(Periodic, I2CDevice):
     return True
 
 
+  def set(self):
+    pass
+
+
 class I2CSensor(Sensor):
 
   def __init__(self, xm, xt, xc, tick_period, mname, xcprefix):
@@ -167,6 +171,10 @@ class I2CSensor(Sensor):
       return None
 
     return self._i2cdev.get()
+
+
+  def set(self):
+    pass
 
 
 class RemoteSensor(Sensor):
@@ -231,6 +239,10 @@ class RemoteSensor(Sensor):
     return float(rv.group(2)), float(rv.group(3)), float(rv.group(4))
 
 
+  def set(self):
+    pass
+  
+
 class ModDevice(object):
 
   def __init__(self, xm, xt, xc, tick_period, xcprefix):
@@ -245,10 +257,17 @@ class ModDevice(object):
     elif module in [ "hd44780" ]:
       self._device = I2CDisplay(xm, xt, xc, tick_period, module, xcprefix)
 
+
   def tick(self, param):
 
     if self._device != None:
       self._device.tick(param)
+
+
+  def set(self, *args, **kwargs):
+  
+    if self._device != None:
+      self._device.set(*args, **kwargs)
 
 
 class NTP(Periodic):
