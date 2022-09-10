@@ -1,3 +1,17 @@
+2022-09-11  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* lib/webserver.py:
+
+	  - Added set() and clear() webserver methods for setting and clearing
+	    request map.
+
+	  - webserver constructor no longer take request map as argument
+
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - Use webserver set() method.
+
+
 2022-09-10  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:

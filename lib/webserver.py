@@ -192,10 +192,7 @@ class Client(object):
 
 class Webserver(object):
 
-  def __init__(self, xt, port=_DEFAULT_PORT, backlog=_DEFAULT_BACKLOG, timeout=_DEFAULT_TIMEOUT, template=_DEFAULT_TEMPLATE, reqmap=None):
-
-    if reqmap == None:
-      reqmap = _DEFAULT_REQMAP
+  def __init__(self, xt, port=_DEFAULT_PORT, backlog=_DEFAULT_BACKLOG, timeout=_DEFAULT_TIMEOUT, template=_DEFAULT_TEMPLATE):
 
     self._xt = xt
     self._port = port
@@ -203,11 +200,22 @@ class Webserver(object):
     self._timeout = timeout
     self._template = template
 
-    self._reqmap = reqmap
-
-    self._clients = []
+    self._reqmap = None 
     self._ssock = None
     self._poller = None
+    self._clients = []
+
+    self.clear()
+
+
+  def set(self, reqmap):
+
+    self._reqmap.update(reqmap)
+
+
+  def clear(self):
+
+    self._reqmap = _DEFAULT_REQMAP.copy()
 
 
   def start(self):
@@ -233,22 +241,12 @@ class Webserver(object):
       self._clients.remove(client)
 
 
-  # reqmap is assumed to be a dictionary of string path keys and string contenti items, or None
   # now is assumed to be an int representing the millisecs since epoch, or None
 
-  def serve(self, reqmap=None, now=None):
+  def serve(self, now=None):
 
     if self._ssock == None:
       return
-
-    # the actual request map to use is what was given during initalisation (or default), updated
-    # with what is given nowwhat was given during initalisation (or default), updated with what
-    # is given here
-
-    treqmap = self._reqmap.copy()
-
-    if reqmap != None:
-      treqmap.update(reqmap)
 
     if now == None:
       if self._timeout > 0:
@@ -281,7 +279,7 @@ class Webserver(object):
     # process
 
     for client in filter(lambda x: x.state() == Client.STATE_PR, self._clients):
-      client.process(self._template, treqmap)
+      client.process(self._template, self._reqmap)
 
     # write
 

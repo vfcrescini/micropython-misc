@@ -338,26 +338,43 @@ class WS():
       m = __import__("webserver")
       self._websrv = m.Webserver(xt, port=port, timeout=to)
 
+      self.set()
       self._websrv.start()
 
 
-  def serve(self, now, htp):
+  def set(self, now=None, htp=None):
 
     if self._websrv == None:
       return
 
-    self._vmap[0][0] = (now // 1000) + xtime.EPOCH_OFFSET
+    # update vmap
 
-    for i in range(0,3):
-      self._vmap[i + 1][0] = htp[0][i]
-      self._vmap[i + 4][0] = htp[1][i]
+    if now != None:
+      self._vmap[0][0] = (now // 1000) + xtime.EPOCH_OFFSET
 
-    tmp = self._template
+    if htp != None:
+      for i in range(0,3):
+        self._vmap[i + 1][0] = htp[0][i]
+        self._vmap[i + 4][0] = htp[1][i]
+
+    # generate content string
+
+    content = self._template
 
     for i in filter(lambda x: x[3], self._vmap):
-      tmp = tmp.replace(i[1], i[2] % (i[0],))
+      content = content.replace(i[1], i[2] % (i[0],))
 
-    self._websrv.serve( { self._path: tmp + "\r\n" }, now)
+    # set new reqmap
+
+    self._websrv.set( { self._path: content + "\r\n" } )
+
+
+  def serve(self, now):
+
+    if self._websrv == None:
+      return
+
+    self._websrv.serve(now)
 
 
 # connect to wifi
@@ -418,7 +435,8 @@ while True:
 
   # serve any pending webserver requests
 
-  websrv.serve(t_now, htp)
+  websrv.set(t_now, htp)
+  websrv.serve(t_now)
 
   # sync time
 
