@@ -314,29 +314,36 @@ class WS():
   def __init__(self, xc, xcprefix):
 
     self._websrv = None
+    self._vmap = None
     self._path = xc.get_str(xcprefix + "_PATH", "/")
     self._template = xc.get_str(xcprefix + "_TEMPLATE", "")
-
-    self._vmap = [
-      [0, "%TS%", "%16d", False],
-      [0.0, "%S1_HUMI%", "%7.3f", False],
-      [0.0, "%S1_TEMP%", "%7.3f", False],
-      [0.0, "%S1_PRES%", "%8.3f", False],
-      [0.0, "%S2_HUMI%", "%7.3f", False],
-      [0.0, "%S2_TEMP%", "%7.3f", False],
-      [0.0, "%S2_PRES%", "%8.3f", False]
-    ]
-
-    for i in self._vmap:
-      i[3] = self._template.find(i[1]) >= 0
 
     port = xc.get_int(xcprefix + "_PORT", 10, 0)
     to = xc.get_int(xcprefix + "_TIMEOUT", 10, 60)
 
     if port > 0 and port < 0xffff and len(self._path) > 0:
 
+      # init vmap
+
+      self._vmap = [
+        [0, "%TS%", "%16d", False],
+        [0.0, "%S1_HUMI%", "%7.3f", False],
+        [0.0, "%S1_TEMP%", "%7.3f", False],
+        [0.0, "%S1_PRES%", "%8.3f", False],
+        [0.0, "%S2_HUMI%", "%7.3f", False],
+        [0.0, "%S2_TEMP%", "%7.3f", False],
+        [0.0, "%S2_PRES%", "%8.3f", False]
+      ]
+
+      for i in self._vmap:
+        i[3] = self._template.find(i[1]) >= 0
+
+      # init ws
+
       m = __import__("webserver")
       self._websrv = m.Webserver(xt, port=port, timeout=to)
+
+      # start
 
       self.set()
       self._websrv.start()
