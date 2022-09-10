@@ -113,7 +113,7 @@ class I2CDisplay(Periodic, I2CDevice):
   # refreshes buffer; returns an array of bools representing lines in buffer
   # that were actually modified
 
-  def _refresh(self, now, s1, s2):
+  def _refresh(self, now, htp1, htp2):
 
     lt = self._xt.localtime(now // 1000)
     chg = [ False ] * len(self._buffer)
@@ -124,12 +124,12 @@ class I2CDisplay(Periodic, I2CDevice):
       tmp = tmp.replace("%SDATE%", "%02d/%02d" % (lt[2], lt[1]))
       tmp = tmp.replace("%LDATE%", "%02d/%02d/%04d" % (lt[2], lt[1], lt[0]))
       tmp = tmp.replace("%TIME%", "%02d:%02d:%02d" % (lt[3], lt[4], lt[5]))
-      tmp = tmp.replace("%S1_HUMI%", "%5.1f%%" % (s1[0]))
-      tmp = tmp.replace("%S1_TEMP%", "%5.1fC" % (s1[1]))
-      tmp = tmp.replace("%S1_PRES%", "%6.1fhPa" % (s1[2]))
-      tmp = tmp.replace("%S2_HUMI%", "%5.1f%%" % (s2[0]))
-      tmp = tmp.replace("%S2_TEMP%", "%5.1fC" % (s2[1]))
-      tmp = tmp.replace("%S2_PRES%", "%6.1fhPa" % (s2[2]))
+      tmp = tmp.replace("%S1_HUMI%", "%5.1f%%" % (htp1[0]))
+      tmp = tmp.replace("%S1_TEMP%", "%5.1fC" % (htp1[1]))
+      tmp = tmp.replace("%S1_PRES%", "%6.1fhPa" % (htp1[2]))
+      tmp = tmp.replace("%S2_HUMI%", "%5.1f%%" % (htp2[0]))
+      tmp = tmp.replace("%S2_TEMP%", "%5.1fC" % (htp2[1]))
+      tmp = tmp.replace("%S2_PRES%", "%6.1fhPa" % (htp2[2]))
 
       if self._buffer[i] != tmp:
         self._buffer[i] = tmp
@@ -138,7 +138,7 @@ class I2CDisplay(Periodic, I2CDevice):
     return chg
 
 
-  # param is (time, [ [ h1, t1, p1 ], [ h2, t2, p2 ] ])
+  # param is (time, [ h1, t1, p1 ], [ h2, t2, p2 ])
 
   def _fire(self, param):
 
@@ -147,7 +147,7 @@ class I2CDisplay(Periodic, I2CDevice):
 
     # send to the display only lines that acutally changed
 
-    for i, _ in filter(lambda x: x[1], enumerate(self._refresh(param[0], param[1][0], param[1][1]))):
+    for i, _ in filter(lambda x: x[1], enumerate(self._refresh(param[0], param[1], param[2]))):
       self._i2cdev.show(self._buffer[i], i + 1)
 
     return True
@@ -241,7 +241,7 @@ class RemoteSensor(Sensor):
 
   def set(self):
     pass
-  
+
 
 class ModDevice(object):
 
@@ -265,7 +265,7 @@ class ModDevice(object):
 
 
   def set(self, *args, **kwargs):
-  
+
     if self._device != None:
       self._device.set(*args, **kwargs)
 
@@ -338,7 +338,7 @@ class WS():
     self._template = xc.get_str(xcprefix + "_TEMPLATE", "")
 
     port = xc.get_int(xcprefix + "_PORT", 10, 0)
-    to = xc.get_int(xcprefix + "_TIMEOUT", 10, 60)
+    tout = xc.get_int(xcprefix + "_TIMEOUT", 10, 60)
 
     if port > 0 and port < 0xffff and len(self._path) > 0:
 
@@ -354,21 +354,21 @@ class WS():
         [0.0, "%S2_PRES%", "%8.3f", False]
       ]
 
-      for i in self._vmap:
-        i[3] = self._template.find(i[1]) >= 0
+      for vm in self._vmap:
+        vm[3] = self._template.find(vm[1]) >= 0
 
       # init ws
 
       m = __import__("webserver")
-      self._websrv = m.Webserver(xt, port=port, timeout=to)
+      self._websrv = m.Webserver(xt, port=port, timeout=tout)
 
       # start
 
-      self.set()
+      self.set(None, None, None)
       self._websrv.start()
 
 
-  def set(self, now=None, htp=None):
+  def set(self, now, htp1, htp2):
 
     if self._websrv == None:
       return
@@ -378,10 +378,11 @@ class WS():
     if now != None:
       self._vmap[0][0] = (now // 1000) + xtime.EPOCH_OFFSET
 
-    if htp != None:
-      for i in range(0,3):
-        self._vmap[i + 1][0] = htp[0][i]
-        self._vmap[i + 4][0] = htp[1][i]
+    for i in range(0, 3):
+      if htp1 != None:
+        self._vmap[i + 1][0] = htp1[i]
+      if htp2 !=  None:
+       self._vmap[i + 4][0] = htp2[i]
 
     # generate content string
 
@@ -439,7 +440,8 @@ del xc
 
 # init global variables
 
-htp = [ [ 0.0 ] * 3 ] + [ [ 0.0 ] * 3 ]
+htp1 = [ 0.0 ] * 3
+htp2 = [ 0.0 ] * 3
 
 # start main loop
 
@@ -454,14 +456,14 @@ while True:
 
   # run periodic stuff
 
-  display.tick((t_now, htp))
+  display.tick((t_now, htp1, htp2))
 
-  sensor1.tick(htp[0])
-  sensor2.tick(htp[1])
+  sensor1.tick(htp1)
+  sensor2.tick(htp2)
 
   # serve any pending webserver requests
 
-  websrv.set(t_now, htp)
+  websrv.set(t_now, htp1, htp2)
   websrv.serve(t_now)
 
   # sync time
