@@ -97,64 +97,110 @@ class I2CDisplay(Periodic, I2CDevice):
 
     I2CDevice.__init__(self, xm, xt, xc, mname, xcprefix)
     Periodic.__init__(self, xc, tick_period, xcprefix)
+    
+    self._xt = xt
+    self._templates = None
+    self._vmap = None
+    self._uset = None
 
     if self._i2cdev != None:
 
-      self._xt = xt
+      # init line templates
 
       tmp = xc.get_str(xcprefix + "_TEMPLATE", "").split(":")
+      self._templates = list(map(lambda x: x.replace("%NBSP%", " ",).replace("%COLON%", ":"), tmp))
 
-      self._buffer = [""] * len(tmp)
-      self._template = list(map(lambda x: x.replace("%NBSP%", " ",).replace("%COLON%", ":"), tmp))
+      # init vmap
+
+      self._vmap = [
+        [(2000, 1), "%SDATE%", "%02d/%02d", set()],
+        [(1, 1, 2000), "%LDATE%", "%02d/%02d/%04d", set()],
+        [(0, 0, 0), "%TIME%", "%02d:%02d:%02d", set()],
+        [(0.0,), "%S1_HUMI%", "%5.1f%%", set()],
+        [(0.0,), "%S1_TEMP%", "%5.1fC", set()],
+        [(0.0,), "%S1_PRES%", "%6.1fhPa", set()],
+        [(0.0,), "%S2_HUMI%", "%5.1f%%", set()],
+        [(0.0,), "%S2_TEMP%", "%5.1fC", set()],
+        [(0.0,), "%S2_PRES%", "%6.1fhPa", set()]
+      ]
+
+      for i, template in enumerate(self._templates):
+        for vm in self._vmap:
+          if template.find(vm[1]) >= 0:
+            vm[3].add(i)
+
+      # init update set
+
+      self._uset = set()
+
+      # send a clear command to display
 
       self._i2cdev.clear()
 
 
-  # refreshes buffer; returns an array of bools representing lines in buffer
-  # that were actually modified
-
-  def _refresh(self, now, htp1, htp2):
-
-    lt = self._xt.localtime(now // 1000)
-    chg = [ False ] * len(self._buffer)
-
-    for i, line in enumerate(self._template):
-
-      tmp = line
-      tmp = tmp.replace("%SDATE%", "%02d/%02d" % (lt[2], lt[1]))
-      tmp = tmp.replace("%LDATE%", "%02d/%02d/%04d" % (lt[2], lt[1], lt[0]))
-      tmp = tmp.replace("%TIME%", "%02d:%02d:%02d" % (lt[3], lt[4], lt[5]))
-      tmp = tmp.replace("%S1_HUMI%", "%5.1f%%" % (htp1[0]))
-      tmp = tmp.replace("%S1_TEMP%", "%5.1fC" % (htp1[1]))
-      tmp = tmp.replace("%S1_PRES%", "%6.1fhPa" % (htp1[2]))
-      tmp = tmp.replace("%S2_HUMI%", "%5.1f%%" % (htp2[0]))
-      tmp = tmp.replace("%S2_TEMP%", "%5.1fC" % (htp2[1]))
-      tmp = tmp.replace("%S2_PRES%", "%6.1fhPa" % (htp2[2]))
-
-      if self._buffer[i] != tmp:
-        self._buffer[i] = tmp
-        chg[i] = True
-
-    return chg
-
-
-  # param is (time, [ h1, t1, p1 ], [ h2, t2, p2 ])
+  # param is now
 
   def _fire(self, param):
 
     if self._i2cdev == None:
       return False
 
-    # send to the display only lines that acutally changed
+    # update time
 
-    for i, _ in filter(lambda x: x[1], enumerate(self._refresh(param[0], param[1], param[2]))):
-      self._i2cdev.show(self._buffer[i], i + 1)
+    self.set(param[0], None, None)
+
+    # go through each line that needs to be updated
+
+    for i in self._uset:
+
+      line = self._templates[i]
+
+      # go through vmap items that are required by this line
+      # then perform string replacement
+
+      for vm in filter(lambda x: i in x[3], self._vmap):
+        line = line.replace(vm[1], vm[2] % vm[0])
+
+      # send to display
+
+      self._i2cdev.show(line, i + 1)
+
+    # clear update set
+
+    self._uset.clear()
 
     return True
 
 
-  def set(self):
-    pass
+  def set(self, now, htp1, htp2):
+
+    # update time variables in vmap 
+
+    if now != None:
+      lt = self._xt.localtime(now // 1000)
+      if self._vmap[0][0] != (lt[2], lt[1]):
+        self._vmap[0][0] = (lt[2], lt[1])
+        self._uset.update(self._vmap[0][3])
+      
+      if self._vmap[1][0] != (lt[2], lt[1], lt[0]):
+        self._vmap[1][0] = (lt[2], lt[1], lt[0])
+        self._uset.update(self._vmap[1][3])
+      
+      if self._vmap[2][0] != (lt[3], lt[4], lt[5]):
+        self._vmap[2][0] = (lt[3], lt[4], lt[5])
+        self._uset.update(self._vmap[2][3])
+
+    # update sensor variables in vmap 
+
+    for i in range(0, 3):
+      if htp1 != None:
+        if self._vmap[i + 3][0] != (htp1[i],):
+          self._vmap[i + 3][0] = (htp1[i],)
+          self._uset.update(self._vmap[i + 3][3])
+      if htp2 != None:
+        if self._vmap[i + 6][0] != (htp2[i],):
+          self._vmap[i + 6][0] = (htp2[i],)
+          self._uset.update(self._vmap[i + 6][3])
 
 
 class I2CSensor(Sensor):
@@ -456,14 +502,18 @@ while True:
 
   # run periodic stuff
 
-  display.tick((t_now, htp1, htp2))
+  display.tick((t_now,))
 
   sensor1.tick(htp1)
   sensor2.tick(htp2)
 
+  # set new values
+
+  display.set(t_now, htp1, htp2)
+  websrv.set(t_now, htp1, htp2)
+
   # serve any pending webserver requests
 
-  websrv.set(t_now, htp1, htp2)
   websrv.serve(t_now)
 
   # sync time

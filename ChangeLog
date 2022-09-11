@@ -1,5 +1,13 @@
 2022-09-11  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor_esp32.py:
+
+	  - I2CDisplay: new set() method to set sensor data independently from
+	    scheduled tick updates.
+
+
+2022-09-11  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
 	* lib/webserver.py:
 
 	  - Added set() and clear() webserver methods for setting and clearing
@@ -9,7 +17,7 @@
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
-	  - Use webserver set() method.
+	  - WS: Use webserver set() method.
 
 
 2022-09-10  Vino Fernando Crescini  <vfcrescini@gmail.com>
