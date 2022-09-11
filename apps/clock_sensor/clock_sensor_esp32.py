@@ -36,16 +36,16 @@ class Periodic(object):
       self._tick_cnt = self._tick_max - Periodic._cnt
 
 
-  def _fire(self, param):
+  def _fire(self, now, param):
 
     return True
 
 
-  def tick(self, param):
+  def tick(self, now, param):
 
     if self._tick_cnt >= self._tick_max:
 
-      if self._fire(param):
+      if self._fire(now, param):
         self._tick_cnt = 0
 
     else:
@@ -60,7 +60,7 @@ class Sensor(Periodic):
     Periodic.__init__(self, xc, tick_period, xcprefix)
 
 
-  def _fire(self, param):
+  def _fire(self, now, param):
 
     rv = self._get()
 
@@ -138,16 +138,14 @@ class I2CDisplay(Periodic, I2CDevice):
       self._i2cdev.clear()
 
 
-  # param is now
-
-  def _fire(self, param):
+  def _fire(self, now, param):
 
     if self._i2cdev == None:
       return False
 
     # update time
 
-    self.set(param[0], None, None)
+    self.set(now, None, None)
 
     # go through each line that needs to be updated
 
@@ -304,10 +302,10 @@ class ModDevice(object):
       self._device = I2CDisplay(xm, xt, xc, tick_period, module, xcprefix)
 
 
-  def tick(self, param):
+  def tick(self, now, param):
 
     if self._device != None:
-      self._device.tick(param)
+      self._device.tick(now, param)
 
 
   def set(self, *args, **kwargs):
@@ -329,7 +327,7 @@ class NTP(Periodic):
     Periodic.__init__(self, xc, tick_period, xcprefix)
 
 
-  def _fire(self, param):
+  def _fire(self, now, param):
 
     if self._xmod == None:
       return False
@@ -502,10 +500,10 @@ while True:
 
   # run periodic stuff
 
-  display.tick((t_now,))
+  display.tick(t_now, None)
 
-  sensor1.tick(htp1)
-  sensor2.tick(htp2)
+  sensor1.tick(t_now, htp1)
+  sensor2.tick(t_now, htp2)
 
   # set new values
 
@@ -518,7 +516,7 @@ while True:
 
   # sync time
 
-  ntp.tick(None)
+  ntp.tick(t_now, None)
 
   # LED off
 

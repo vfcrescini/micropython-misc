@@ -2,6 +2,8 @@
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
+	  - Periodic: tick() and _fire() now takes a now argument.
+
 	  - I2CDisplay: new set() method to set sensor data independently from
 	    scheduled tick updates.
 
