@@ -1,5 +1,22 @@
 2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* apps/clock_sensor/clock_sensor.py:
+	
+	  - Renamed from clock_sensor_esp32.py
+	
+	* conf/clock_sensor/clock_sensor_rp2040.conf:
+	
+	  - Renamed from clock_sensor_picow.conf
+	
+	* apps/clock_sensor/standalone_sensor_esp32.py:
+	* conf/clock_sensor/standalone_sensor_esp8266.conf:
+	
+	  - Deleted. No logner needed as clock_sensor.py can be configured to
+	    run without a display.
+
+
+2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
 	* conf/clock_sensor/clock_sensor_esp8266_nodisplay.conf:
 
 	  - Added new no-display sample config.

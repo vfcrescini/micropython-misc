@@ -2,9 +2,9 @@
 # Copyright (C) 2022 Vino Fernando Crescini <vfcrescini@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# 2021-12-05 clock_sensor_esp32.py
+# 2021-12-05 clock_sensor.py
 
-# clock weather sensor webserver for ESP32/ESP8266
+# clock weather sensor webserver for ESP32/ESP8266/RP2040
 
 
 import xtime
