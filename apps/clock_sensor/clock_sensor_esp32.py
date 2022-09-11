@@ -59,6 +59,7 @@ class Sensor(Periodic):
 
     Periodic.__init__(self, xc, tick_period, xcprefix)
 
+    self._listeners = set()
 
   def _fire(self, now, param):
 
@@ -67,11 +68,17 @@ class Sensor(Periodic):
     if rv == None:
       return False
 
-    param[0] = rv[0] if len(rv) > 0 else 0.0
-    param[1] = rv[1] if len(rv) > 1 else 0.0
-    param[2] = rv[2] if len(rv) > 2 else 0.0
+    for listener in self._listeners:
+      listener(now, list(rv) + [ 0.0 ] * (3 - len(rv)))
 
     return True
+
+
+  # fn(now, htp)
+
+  def add_listener(self, fn):
+
+    self._listeners.add(fn)
 
 
 class I2CDevice(object):
@@ -314,6 +321,12 @@ class ModDevice(object):
       self._device.set(*args, **kwargs)
 
 
+  def add_listener(self, fn):
+
+    if self._device != None and isinstance(self._device, Sensor):
+      self._device.add_listener(fn)
+
+
 class NTP(Periodic):
 
   def __init__(self, xc, tick_period, xcprefix):
@@ -482,10 +495,13 @@ led = LED(xc, "LED")
 
 del xc
 
-# init global variables
+# set listeners
 
-htp1 = [ 0.0 ] * 3
-htp2 = [ 0.0 ] * 3
+sensor1.add_listener(lambda x, y: display.set(x, y, None))
+sensor2.add_listener(lambda x, y: display.set(x, None, y))
+
+sensor1.add_listener(lambda x, y: websrv.set(x, y, None))
+sensor2.add_listener(lambda x, y: websrv.set(x, None, y))
 
 # start main loop
 
@@ -502,13 +518,8 @@ while True:
 
   display.tick(t_now, None)
 
-  sensor1.tick(t_now, htp1)
-  sensor2.tick(t_now, htp2)
-
-  # set new values
-
-  display.set(t_now, htp1, htp2)
-  websrv.set(t_now, htp1, htp2)
+  sensor1.tick(t_now, None)
+  sensor2.tick(t_now, None)
 
   # serve any pending webserver requests
 
