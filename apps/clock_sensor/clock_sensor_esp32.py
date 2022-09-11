@@ -387,7 +387,7 @@ class LED(object):
 
 class WS():
 
-  def __init__(self, xc, xcprefix):
+  def __init__(self, xt, xc, xcprefix):
 
     self._websrv = None
     self._vmap = None
@@ -481,7 +481,7 @@ display = ModDevice(xm, xt, xc, tick_period, "DISPLAY")
 
 # init webserver
 
-websrv = WS(xc, "WEBSRV")
+websrv = WS(xt, xc, "WEBSRV")
 
 # init ntp sync
 
