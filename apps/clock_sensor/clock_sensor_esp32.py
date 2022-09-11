@@ -136,9 +136,9 @@ class I2CDisplay(Periodic, I2CDevice):
           if template.find(vm[1]) >= 0:
             vm[3].add(i)
 
-      # init update set
+      # init update set with all lines to force initial update
 
-      self._uset = set()
+      self._uset = { i for i in range(0, len(self._templates)) }
 
       # send a clear command to display
 
@@ -498,9 +498,9 @@ del xc
 # set listeners
 
 sensor1.add_listener(lambda x, y: display.set(x, y, None))
-sensor2.add_listener(lambda x, y: display.set(x, None, y))
-
 sensor1.add_listener(lambda x, y: websrv.set(x, y, None))
+
+sensor2.add_listener(lambda x, y: display.set(x, None, y))
 sensor2.add_listener(lambda x, y: websrv.set(x, None, y))
 
 # start main loop
