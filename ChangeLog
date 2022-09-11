@@ -2,6 +2,8 @@
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
 
+	  - Periodic: removed the now unused param in tick() and _fire().
+
 	  - I2CDisplay and WS now register their set() methods as listeners
 	    to the sensors.
 
