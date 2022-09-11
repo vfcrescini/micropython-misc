@@ -1,3 +1,15 @@
+2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* conf/clock_sensor/clock_sensor_esp8266_nodisplay.conf:
+
+	  - Added new no-display sample config.
+
+	* conf/clock_sensor/clock_sensor_esp8266.conf:
+	* conf/clock_sensor/clock_sensor_picow.conf:
+
+	  - Cleanup.
+
+
 2022-09-11  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor_esp32.py:
