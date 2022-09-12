@@ -1,5 +1,9 @@
 2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
+	* VERSION:
+
+	  - Updated to v0.0.2.
+
 	* apps/clock_sensor/clock_sensor.py:
 	* apps/clock_sensor/main.py:
 
