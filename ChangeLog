@@ -1,6 +1,14 @@
 2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* apps/clock_sensor/clock_sensor.py:
+	* apps/clock_sensor/main.py:
+
+	  - Split application file into module and main app files.
+
+
+2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* apps/clock_sensor/clock_sensor.py:
 
 	  - Renamed from clock_sensor_esp32.py
 
