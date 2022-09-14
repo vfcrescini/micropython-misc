@@ -1,3 +1,12 @@
+2022-09-15  Vino Fernando Crescini  <vfcrescini@gmail.com>
+
+	* conf/clock_sensor/clock_sensor_esp32.conf:
+	* conf/clock_sensor/clock_sensor_esp8266.conf:
+	* conf/clock_sensor/clock_sensor_rp2040.conf:
+
+	  - Tidy up.
+
+
 2022-09-12  Vino Fernando Crescini  <vfcrescini@gmail.com>
 
 	* VERSION:
